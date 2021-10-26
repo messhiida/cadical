@@ -1337,6 +1337,13 @@ inline bool Internal::search_limits_hit ()
     return true;
   }
 
+  // UPDATE:: restart limit here
+  if (stats.restarts >= 50000) {
+    LOG ("restarts limit %" PRId64 " reached", 50000);
+    return true; 
+  }
+    
+
   return false;
 }
 

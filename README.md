@@ -52,5 +52,3 @@ latest SAT competition proceedings:
 You might also find more information on CaDiCaL at <http://fmv.jku.at/cadical>.
 
 Armin Biere
-
-test

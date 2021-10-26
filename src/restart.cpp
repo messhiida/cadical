@@ -1,4 +1,6 @@
 #include "internal.hpp"
+// UPDATE :: include original cpp file for SSI calc
+#include "similarity.cpp"
 
 namespace CaDiCaL {
 
@@ -101,6 +103,18 @@ void Internal::restart () {
 
   lim.restart = stats.conflicts + opts.restartint;
   LOG ("new restart limit at %" PRId64 " conflicts", lim.restart);
+
+  //UPDATE:: CSD for every N restarts 
+  if(stats.restarts > 0 && stats.restarts % 100 == 0){
+    map<int, vector<double> > new_csd = get_CSD (stab, phases.saved);
+    if(csd_database.size() >= 2){
+      map<int, vector<double> > old_csd = csd_database.back();
+      double ssi = calculate_SSI(new_csd, old_csd);
+      cout << stats.restarts << ",";
+      similarityLevel sim = judge_SSI_score(ssi);
+    }
+    save_CSD(new_csd);
+  }
 
   report ('R', 2);
   STOP (restart);
