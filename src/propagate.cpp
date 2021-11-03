@@ -1,5 +1,6 @@
 #include "internal.hpp"
 
+
 namespace CaDiCaL {
 
 /*------------------------------------------------------------------------*/
@@ -365,6 +366,18 @@ bool Internal::propagate () {
 
       if (stable) stats.stabconflicts++;
       stats.conflicts++;
+
+      /*
+      //UPDATE:: CSD for SSI verification with restart change
+      map<int, vector<double> > new_csd = get_CSD (stab, phases.saved);
+      save_CSD(new_csd);
+      //std::cout << stats.conflicts << ":" << new_csd.size() << "/" << csd_database.size()<< endl;
+      if(csd_database.size() == (LIMIT_SAVING_CSD -1)){ 
+        int index = LIMIT_SAVING_CSD - 1;
+        double ssi = calculate_SSI(csd_database[0], csd_database[index-1]);
+        std::cout << ssi << ",";
+      }
+      */
 
       LOG (conflict, "conflict");
 

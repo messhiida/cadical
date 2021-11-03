@@ -26,11 +26,23 @@ int Internal::next_decision_variable_on_queue () {
 //
 int Internal::next_decision_variable_with_best_score () {
   int res = 0;
-  for (;;) {
-    res = scores.front ();
-    if (!val (res)) break;
-    (void) scores.pop_front ();
+  /*
+  //UPDATE:: 変数固定用の仕組み導入
+  vector<unsigned> prioritizedVars = {1,2,3,4,5};
+  for(int i=0; i<prioritizedVars.size(); i++){
+    if(!val(prioritizedVars[i])){ 
+      res = prioritizedVars[i];
+      break;
+    }
   }
+  if(res == 0){//UPDATE::追加
+  */
+    for (;;) {
+      res = scores.front ();
+      if (!val (res)) break; //if assigned (=zero = unassigned以外) break
+      (void) scores.pop_front (); 
+    }
+  //}//UPDATE::追加
   LOG ("next decision variable %d with score %g", res, score (res));
   return res;
 }
@@ -110,6 +122,10 @@ int Internal::decide () {
   } else {
     stats.decisions++;
     int idx = next_decision_variable ();
+    
+    //デバッグ用print
+    //std::cout << stats.decisions << ":" << idx << ", ";
+    
     const bool target = (opts.target > 1 || (stable && opts.target));
     int decision = decide_phase (idx, target);
     search_assume_decision (decision);

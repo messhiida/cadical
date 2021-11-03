@@ -135,6 +135,13 @@ Clause * Internal::new_clause (bool red, int glue) {
   clauses.push_back (c);
   LOG (c, "new pointer %p", (void*) c);
 
+  //UPDATE:: 学習節同じ場合のための書き出し　（全学習節）
+  if(c->glue > 0 && (c->glue <=2 || size <= 2)){
+    std::cout << "[lc: " << c->glue << "/" << c->size << "] ";
+    for (int i = 0; i < size; i++) std::cout << c->literals[i] << ", ";
+    std::cout << endl;
+  }
+
   if (likely_to_be_kept_clause (c)) mark_added (c);
 
   return c;

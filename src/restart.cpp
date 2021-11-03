@@ -1,6 +1,4 @@
 #include "internal.hpp"
-// UPDATE :: include original cpp file for SSI calc
-#include "similarity.cpp"
 
 namespace CaDiCaL {
 
@@ -105,6 +103,7 @@ void Internal::restart () {
   LOG ("new restart limit at %" PRId64 " conflicts", lim.restart);
 
   //UPDATE:: CSD for every N restarts 
+  /*
   if(stats.restarts > 0 && stats.restarts % 100 == 0){
     map<int, vector<double> > new_csd = get_CSD (stab, phases.saved);
     if(csd_database.size() >= 2){
@@ -115,6 +114,38 @@ void Internal::restart () {
     }
     save_CSD(new_csd);
   }
+  */
+
+  //UPDATE:: restartごとにSSIを計算する
+  /*
+  if(csd_database.size() == LIMIT_SAVING_CSD){
+    int index = LIMIT_SAVING_CSD - 2;
+    double ssi = calculate_SSI(csd_database[0], csd_database[index]);
+    std::cout << ssi << ", ["<< stats.restarts<< "]" << endl;
+    map<int, vector<double> > latest_csd = csd_database[index+1];
+    csd_database.clear();
+    save_CSD(latest_csd);  
+  }
+  */
+
+  //UPDATE:: clausesの内容を書き出し
+  //その後、Restart時のCSDと同じ学習節があった場合の状態を書き出し
+  std::cout << "[Restart: " << stats.restarts << "], ";
+  std::cout << endl;
+  /*
+  map<int, vector<double> > csd = get_CSD (stab, phases.saved);
+  for (const auto& [key, value] : csd) {
+    std::cout << "{" << key << ",";
+    for(auto v: value) std::cout << v << ",";
+    std::cout << "}, ";
+  }
+  std::cout << endl;
+  */
+  /*
+  if(clauses.size() >= 10){
+    for(int i=0; i<10; i++) read_learntClause(clauses[i]);
+  }
+  */
 
   report ('R', 2);
   STOP (restart);

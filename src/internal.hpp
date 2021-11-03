@@ -87,6 +87,9 @@ extern "C" {
 #include "watch.hpp"
 #include "reap.hpp"
 
+// UPDATE :: include original cpp file for SSI calc
+#include "similarity.hpp"
+
 /*------------------------------------------------------------------------*/
 
 namespace CaDiCaL {
@@ -1338,8 +1341,8 @@ inline bool Internal::search_limits_hit ()
   }
 
   // UPDATE:: restart limit here
-  if (stats.restarts >= 50000) {
-    LOG ("restarts limit %" PRId64 " reached", 50000);
+  if (stats.restarts >= RESTART_LIMIT) {
+    LOG ("restarts limit %" PRId64 " reached", RESTART_LIMIT);
     return true; 
   }
     
