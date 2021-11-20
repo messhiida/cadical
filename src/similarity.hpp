@@ -4,35 +4,42 @@
 #include <iostream>
 #include <map>
 #include "internal.hpp"
+#include <omp.h>
+#include <algorithm>
+#include <sstream>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <vector>
 
 using namespace std;
+enum similarityLevel
+{
+    high,
+    normal,
+    low
+};
 
-#define RESTART_LIMIT 5000
+//パラメーターセッティング
+#define RESTART_LIMIT 10000
 #define CONSTANT_FOR_RANK_CALC 10
 #define ALPHA_TO_JUDGE_SSI 1
-
+#define CSD_SCORE_CRITERIA 1 //VSIDSの値がx未満であれば価値がないと判断する。0=VSIDSに何かしらの値が入っていればOK。1=直近の学習説に含まれているものにほぼ限定される
 #define LIMIT_SAVING_SSI 100
-extern vector<double> SSI_database;
 #define LIMIT_SAVING_CSD 101
-extern vector< map<int, vector<double> > > csd_database;
+#define FIXED_DECISION_AT_TOP true
 
-extern int scoreCriteria; 
-extern double affectRatioForChangingSearch; //下位何％をpopするか
-extern double incrementalNumForChangingSearch; //10000回分のVSIDS bumpに相当する分の変更を加える
-enum similarityLevel {high, normal, low};
+extern vector<double> SSI_database;
+extern vector<map<int, vector<double>>> csd_database;
 
-void showResult(vector<double> s);
-void draw_VSIDS_graph (vector<double> s);
+map<int, vector<double>> get_CSD(vector<double> scores, vector<signed char> phases);
+double calculate_SSI(map<int, vector<double>> csd1, map<int, vector<double>> csd2);
+void save_CSD(map<int, vector<double>> csd);
 
-double countValidScoreVariables(vector<double> scores);
-
-map<int, vector<double> > get_CSD (vector<double> scores, vector<signed char> phases);
-double calculate_SSI (map<int, vector<double> > csd1, map<int, vector<double> > csd2);
-
-void save_SSI (double ssi);
-void save_CSD (map<int, vector<double> > csd);
 similarityLevel judge_SSI_score(double ssi);
-vector<int> read_learntClause(CaDiCaL::Clause*);
+vector<int> convert_learntClause_to_vector(CaDiCaL::Clause *);
+
+extern vector<int> getSameLearntClause_restart(string &outputFile);
 
 //Todo ここまだこれから
 vector<double> change_search_space(vector<double> scores, double scoreInc);
