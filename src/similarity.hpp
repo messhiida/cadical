@@ -13,12 +13,6 @@
 #include <vector>
 
 using namespace std;
-enum similarityLevel
-{
-    high,
-    normal,
-    low
-};
 
 //パラメーターセッティング
 #define RESTART_LIMIT 10000
@@ -28,9 +22,23 @@ enum similarityLevel
 #define LIMIT_SAVING_SSI 100
 #define LIMIT_SAVING_CSD 101
 #define FIXED_DECISION_AT_TOP true
+#define PARALLEL_NUM 3
+#define PARA_SHARED_CLAUSE_LBD 2 //これ以下は共有する
+
+enum similarityLevel
+{
+    high,
+    normal,
+    low
+};
 
 extern vector<double> SSI_database;
 extern vector<map<int, vector<double>>> csd_database;
+extern int sharedData;
+extern bool para_finished;
+extern int set_parallel_seed(int thread_num);
+extern void submit_shared_learntClause(int thread_num, CaDiCaL::Clause *lc);
+extern vector<CaDiCaL::Clause *> import_shared_learntClause();
 
 map<int, vector<double>> get_CSD(vector<double> scores, vector<signed char> phases);
 double calculate_SSI(map<int, vector<double>> csd1, map<int, vector<double>> csd2);

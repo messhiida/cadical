@@ -1096,12 +1096,11 @@ int main(int argc, char **argv)
   int res;
   //UPDATE:: openMPを使った並列実験
   printf("使用可能な最大スレッド数：%d\n", omp_get_max_threads());
-#pragma omp parallel num_threads(4)
+#pragma omp parallel shared(sharedData), num_threads(PARALLEL_NUM)
   {
-    #pragma omp sections
-    for (int i = 0; i < 4; i++)
+#pragma omp for
+    for (int i = 0; i < PARALLEL_NUM; i++)
     {
-      printf("thread = %d, i = %2d\n", omp_get_thread_num(), i);
       CaDiCaL::App app;
       res = app.main(argc, argv);
     }

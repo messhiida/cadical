@@ -172,9 +172,44 @@ namespace CaDiCaL
     for(int i=0; i<10; i++) read_learntClause(clauses[i]);
   }
   */
+    //UPDATE:: import learnt clause for parallel
+    /*
+    if (PARALLEL_NUM > 1)
+    {
+      vector<Clause *> shared_clauses = import_shared_learntClause();
+      //printf("[thread %d] total %d clauses + import %d clauses, learnt %d\n", omp_get_thread_num(), clauses.size(), shared_clauses.size(), stats.learned.clauses);
+      for (const auto &c : shared_clauses)
+      {
+
+        
+        stats.added.total++;
+
+        stats.current.total++;
+        stats.added.total++;
+
+        if (c->redundant)
+        {
+          stats.current.redundant++;
+          stats.added.redundant++;
+        }
+        else
+        {
+          stats.irrbytes += c->bytes();
+          stats.current.irredundant++;
+          stats.added.irredundant++;
+        }
+        
+
+        clauses.push_back(c);
+        stats.learned.literals += c->size;
+        stats.learned.clauses++;
+        //watch_clause(c);
+        
+      }
+    }
+    */
 
     report('R', 2);
     STOP(restart);
   }
-
 }

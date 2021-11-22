@@ -73,6 +73,16 @@
         "typeinfo": "cpp",
         "unordered_map": "cpp",
         "utility": "cpp",
-        "__availability": "cpp"
-    }
+        "__availability": "cpp",
+        "version": "cpp",
+        "*.tcc": "cpp",
+        "random": "cpp",
+        "stop_token": "cpp",
+        "cerrno": "cpp",
+        "compare": "cpp",
+        "numeric": "cpp",
+        "semaphore": "cpp",
+        "memory_resource": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }

@@ -3,6 +3,38 @@
 using namespace std;
 vector<double> SSI_database;
 vector<map<int, vector<double>>> csd_database;
+int sharedData = 0;
+bool para_finished = false;
+vector<vector<CaDiCaL::Clause *>> shared_learntClause(PARALLEL_NUM); //1つめのデータはGlueが入っている
+
+void submit_shared_learntClause(int thread_num, CaDiCaL::Clause *lc)
+{
+    for (int i = 0; i < PARALLEL_NUM; i++)
+    {
+        if (i != 0 && i != thread_num) //0 == master node, thread_num == 自分自身 の為この２つはskip
+            shared_learntClause[i].push_back(lc);
+    }
+}
+
+vector<CaDiCaL::Clause *> import_shared_learntClause()
+{
+    int my_thread = omp_get_thread_num();
+    vector<CaDiCaL::Clause *> res;
+    auto itr = shared_learntClause[my_thread].begin();
+    while (itr != shared_learntClause[my_thread].end())
+    {
+        res.push_back(*itr);
+        itr = shared_learntClause[my_thread].erase(itr);
+    }
+    return res;
+}
+
+int set_parallel_seed(int thread_num)
+{
+    int para_seed = 0;
+    para_seed = 2048 * thread_num; //2048はmagic number
+    return para_seed;
+}
 
 double _count_validScoreVars(vector<double> scores)
 {
@@ -113,7 +145,7 @@ similarityLevel judge_SSI_score(double ssi)
 
     if (ave == 0 || std == 0)
         return normal;
-    if (ssi >= ave + std * ALPHA_TO_JUDGE_SSI || ((ave + std) >= 1 & ssi >= 0.99))
+    if (ssi >= ave + std * ALPHA_TO_JUDGE_SSI || ((ave + std) >= 1 && ssi >= 0.99))
         return high;
     if (ssi < ave - std * ALPHA_TO_JUDGE_SSI || ((ave - std) <= 0 && ssi <= 0.01))
         return low;
