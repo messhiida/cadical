@@ -233,19 +233,11 @@ namespace CaDiCaL
       printf("thread: %d runs on seed = %d  \n", omp_get_thread_num(), opts.seed);
 
       //UPDATE:: Master nodeのactivityを制御
-      /*
       if (omp_get_thread_num() == 0) // master nodeのThreadは0とする
       {
-
-        while (true)
-        {
-          //masterの動作をここで定義
-          sleep(3);
-          if (para_finished == true)
-            break;
-        }
+        while (!para_finished) //masterの動作をここで定義
+          int counter = update_worker_action_table();
       }
-      */
     }
 
     while (!res)
@@ -264,9 +256,9 @@ namespace CaDiCaL
       else if (iterating)
         iterate(); // report learned unit
       else if (satisfied())
-        res = 10; // found model
-      else if (search_limits_hit())
-        break;                              // decision or conflict limit
+        res = 10;                   // found model
+      else if (search_limits_hit()) // decision or conflict limit
+        break;
       else if (terminated_asynchronously()) // externally terminated
         break;
       else if (restarting())
@@ -306,7 +298,7 @@ namespace CaDiCaL
     if (PARALLEL_NUM > 1 && para_finished != true)
     {
       para_finished = true;
-      printf("thread: %d finds a solution and announces to finish\n", omp_get_thread_num());
+      printf("thread: %d finds a solution and announces to finish by result %d\n", omp_get_thread_num(), res);
     }
 
     return res;

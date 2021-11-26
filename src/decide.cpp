@@ -34,7 +34,7 @@ namespace CaDiCaL
     {
       res = scores.front();
       if (!val(res))
-        break; //if assigned (=zero = unassigned以外) break
+        break; //if assigned (aka. zero = unassigned以外) break
       (void)scores.pop_front();
     }
     LOG("next decision variable %d with score %g", res, score(res));
