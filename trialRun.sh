@@ -8,4 +8,6 @@ while getopts m OPT
     clear
   done
 
-./build/cadical -q -t 60 --compact=false ../instances/sc2019/ex051_9-sc2018.cnf.xz
+#./build/cadical -q -t 60 --compact=false ../instances/sc2019/ex051_9-sc2018.cnf.xz
+#./build/cadical -q -t 60 --compact=false ../instances/sc2019/aes_24_4_keyfind_2-sc2013.cnf.xz
+./build/cadical -q -t 60 --compact=false ../instances/sc2019/Pb-chnl15-16_c18.cnf.xz

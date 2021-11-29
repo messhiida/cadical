@@ -3,20 +3,45 @@
 using namespace std;
 vector<double> SSI_database;
 vector<vector<array<double, 3>>> csd_database;
-int sharedData = 0;
-bool para_finished = false;
 
-vector<vector<CaDiCaL::Clause *>> shared_learntClause(PARALLEL_NUM);
-vector<vector<vector<array<double, 3>>>> shared_csd(PARALLEL_NUM);
-//vector<bool> parallel_worker_action_table(PARALLEL_NUM, false);
+bool para_finished = false;
+array<vector<vector<array<double, 3>>>, PARALLEL_NUM> shared_csd;
 array<array<bool, PARALLEL_NUM>, PARALLEL_NUM> parallel_worker_action_table;
+
+array<vector<CaDiCaL::Clause *>, PARALLEL_NUM> shared_learntClause;
+
+bool check_para_finished(bool fin) //引数を指定しない場合は状況確認のみ。引数をtrueで指定すると終了通知
+{
+    if (fin == true)
+#pragma omp critical(access_para_finished)
+        para_finished = true;
+
+    bool tmp_fin;
+#pragma omp critical(access_para_finished)
+    tmp_fin = para_finished;
+
+    if (tmp_fin == true)
+        return true;
+    else
+        return false;
+}
+bool read_parallel_worker_action_table(int i, int j)
+{
+    bool tmp;
+#pragma omp critical(action_table)
+    tmp = parallel_worker_action_table[i][j];
+    if (tmp == true)
+        return true;
+    else
+        return false;
+}
 
 bool check_action_table(int thread_num)
 {
     int counter = 0;
     for (int i = 0; i < PARALLEL_NUM; i++)
     {
-        if (parallel_worker_action_table[thread_num][i] == true)
+        if (read_parallel_worker_action_table(thread_num, i))
             counter++;
     }
     if (counter >= ACTION_THREASHOLD)
@@ -25,21 +50,21 @@ bool check_action_table(int thread_num)
         return false;
 }
 
-void set_bool_to_action_table(int thread_num, bool b)
+void set_bool_to_action_table(int i, int j, bool num)
 {
-    for (int i = 0; i < PARALLEL_NUM; i++)
-    {
-        parallel_worker_action_table[thread_num][i] = b;
-        parallel_worker_action_table[i][thread_num] = b;
-    }
+#pragma omp critical(action_table)
+    parallel_worker_action_table[i][j] = num;
 }
 
 void submit_csd(int thread_num, vector<array<double, 3>> csd)
 {
-    if ((int)csd.size() > 0)
-        shared_csd[thread_num].push_back(csd);
-    if ((int)shared_csd[thread_num].size() > LIMIT_SHARED_CSD)
-        shared_csd[thread_num].erase(shared_csd[thread_num].begin());
+#pragma omp critical(shared_csd)
+    {
+        if ((int)csd.size() > 0)
+            shared_csd[thread_num].push_back(csd);
+        if ((int)shared_csd[thread_num].size() > LIMIT_SHARED_CSD)
+            shared_csd[thread_num].erase(shared_csd[thread_num].begin());
+    }
 }
 
 //各workerごとにSSI table(自分, 自分以外)があり、それをもとにhigh / lowを判定
@@ -51,30 +76,39 @@ int update_worker_action_table()
     {
         for (int j = 0; j < i; j++)
         {
-            if (!shared_csd[i].empty() && !shared_csd[j].empty())
+
+            bool check_shared_csd_empty;
+#pragma omp critical(shared_csd)
+            check_shared_csd_empty = (shared_csd[i].empty() || shared_csd[j].empty());
+
+            if (check_shared_csd_empty)
+                continue;
+
+            vector<array<double, 3>> csd1, csd2;
+#pragma omp critical(shared_csd)
             {
-                vector<array<double, 3>> csd1 = shared_csd[i].back();
-                vector<array<double, 3>> csd2 = shared_csd[j].back();
-                if (csd1.size() != csd2.size())
-                    continue; //一旦サイズが異なればskipすることにしておく
-                //if (csd1.size() == 0 || csd2.size() == 0)
-                //printf("[%d][%d] %d, %d: %d, %d\n", i, j, csd1.size(), csd2.size(), shared_csd[i].back().size(), shared_csd[i].back().size());
-                double ssi = calculate_SSI(csd1, csd2);
-                similarityLevel sl = judge_SSI_score(ssi);
-                if (sl == high && parallel_worker_action_table[i][j] == false)
-                {
-                    counter++;
-                    printf("Similarity high: [%d][%d]\n", j, i);
-                    parallel_worker_action_table[i][j] = true;
-                    parallel_worker_action_table[j][i] = true;
-                }
-                if (sl == low && parallel_worker_action_table[i][j] == true)
-                {
-                    counter--;
-                    printf("Similarity low: [%d][%d]\n", j, i);
-                    parallel_worker_action_table[i][j] = false;
-                    parallel_worker_action_table[j][i] = false;
-                }
+                csd1 = shared_csd[i].back();
+                csd2 = shared_csd[j].back();
+            }
+            if (csd1.size() != csd2.size())
+                continue; //一旦サイズが異なればskipすることにしておく
+            //if (csd1.size() == 0 || csd2.size() == 0)
+            //printf("[%d][%d] %d, %d: %d, %d\n", i, j, csd1.size(), csd2.size(), shared_csd[i].back().size(), shared_csd[i].back().size());
+            double ssi = calculate_SSI(csd1, csd2);
+            similarityLevel sl = judge_SSI_score(ssi);
+            if (sl == high && !read_parallel_worker_action_table(i, j))
+            {
+                counter++;
+                printf("Similarity high: [%d][%d]\n", j, i);
+                set_bool_to_action_table(i, j, true);
+                set_bool_to_action_table(j, i, true);
+            }
+            if (sl == low && read_parallel_worker_action_table(i, j))
+            {
+                counter--;
+                printf("Similarity low: [%d][%d]\n", j, i);
+                set_bool_to_action_table(i, j, false);
+                set_bool_to_action_table(j, i, false);
             }
         }
     }

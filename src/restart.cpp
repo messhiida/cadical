@@ -219,7 +219,12 @@ namespace CaDiCaL
       if (change == true)
       {
         stab = change_search_space(stab, score_inc);
-        set_bool_to_action_table(my_thread, false);
+
+        for (int i = 0; i < PARALLEL_NUM; i++)
+        {
+          set_bool_to_action_table(my_thread, i, false);
+          set_bool_to_action_table(i, my_thread, false);
+        }
       }
     }
 

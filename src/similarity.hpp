@@ -38,16 +38,17 @@ enum similarityLevel
 
 extern vector<double> SSI_database;
 extern vector<vector<array<double, 3>>> csd_database;
-extern int sharedData;
 extern bool para_finished;
 extern int set_parallel_seed(int thread_num);
 extern void submit_shared_learntClause(int thread_num, CaDiCaL::Clause *lc);
 extern vector<CaDiCaL::Clause *> import_shared_learntClause();
 
-extern vector<vector<vector<array<double, 3>>>> shared_csd;
+extern bool check_para_finished(bool fin = false);
+
+extern array<vector<vector<array<double, 3>>>, PARALLEL_NUM> shared_csd;
 //extern vector<bool> parallel_worker_action_table;
 extern bool check_action_table(int thread_num);
-extern void set_bool_to_action_table(int thread_num, bool b);
+extern void set_bool_to_action_table(int i, int j, bool b);
 
 extern void submit_csd(int thread_num, vector<array<double, 3>> csd);
 extern int update_worker_action_table();

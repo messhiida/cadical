@@ -235,7 +235,7 @@ namespace CaDiCaL
       //UPDATE:: Master nodeのactivityを制御
       if (omp_get_thread_num() == 0) // master nodeのThreadは0とする
       {
-        while (!para_finished) //masterの動作をここで定義
+        while (!check_para_finished()) //masterの動作をここで定義
           int counter = update_worker_action_table();
       }
     }
@@ -243,7 +243,7 @@ namespace CaDiCaL
     while (!res)
     {
       //UPDATE:: parallel用 終了通知を受けて終了させる (非終了thread)
-      if (PARALLEL_NUM > 1 && para_finished == true)
+      if (PARALLEL_NUM > 1 && check_para_finished())
       {
         printf("thread: %d was forced to finish\n", omp_get_thread_num());
         break;
@@ -295,9 +295,9 @@ namespace CaDiCaL
     STOP(search);
 
     //UPDATE:: PARALLELを終了させる通知 (終了したthread)
-    if (PARALLEL_NUM > 1 && para_finished != true)
+    if (PARALLEL_NUM > 1 && !check_para_finished())
     {
-      para_finished = true;
+      check_para_finished(true);
       printf("thread: %d finds a solution and announces to finish by result %d\n", omp_get_thread_num(), res);
     }
 
