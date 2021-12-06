@@ -2,13 +2,13 @@
 
 using namespace std;
 vector<double> SSI_database;
-vector<vector<array<double, 3>>> csd_database;
+//vector<vector<array<double, 3>>> csd_database;
 
 bool para_finished = false;
-array<vector<vector<array<double, 3>>>, PARALLEL_NUM> shared_csd;
-array<array<bool, PARALLEL_NUM>, PARALLEL_NUM> parallel_worker_action_table;
+array<vector<array<double, 3>>, PARALLEL_NUM> shared_csd;
+//array<array<bool, PARALLEL_NUM>, PARALLEL_NUM> parallel_worker_action_table;
 array<vector<CaDiCaL::Clause *>, PARALLEL_NUM> shared_learntClause;
-
+/*
 bool read_parallel_worker_action_table(int i, int j)
 {
     bool tmp;
@@ -18,39 +18,56 @@ bool read_parallel_worker_action_table(int i, int j)
         return true;
     else
         return false;
-}
+}*/
 
 bool check_action_table(int thread_num)
 {
     int counter = 0;
+    vector<pair<int, int>> _record_simHigh;
     for (int i = 0; i < PARALLEL_NUM; i++)
     {
-        if (read_parallel_worker_action_table(thread_num, i))
-            counter++;
-    }
-    if (counter >= ACTION_THREASHOLD)
-        return true;
-    else
-        return false;
-}
+        if (i == thread_num)
+            continue;
 
+        vector<array<double, 3>> my_csd, comp_csd;
+#pragma omp critical(SHARED_CSD)
+        {
+            my_csd = shared_csd[thread_num];
+            comp_csd = shared_csd[i];
+        }
+        double ssi = calculate_SSI(my_csd, comp_csd);
+        similarityLevel sl = judge_SSI_score(ssi);
+        if (sl == high)
+        {
+            _record_simHigh.push_back(make_pair(thread_num, i));
+            counter++;
+        }
+        if (counter >= ACTION_THREASHOLD)
+        {
+
+            printf("Similarity high: ");
+            for (int j = 0; j < counter; j++)
+                printf("[%d][%d],", _record_simHigh[j].first, _record_simHigh[j].second);
+            printf("\n");
+
+            return true;
+        }
+    }
+    return false;
+}
+/*
 void set_bool_to_action_table(int i, int j, bool num)
 {
 #pragma omp critical(action_table)
     parallel_worker_action_table[i][j] = num;
-}
+}*/
 
 void submit_csd(int thread_num, vector<array<double, 3>> csd)
 {
-#pragma omp critical(shared_csd)
-    {
-        if ((int)csd.size() > 0)
-            shared_csd[thread_num].push_back(csd);
-        if ((int)shared_csd[thread_num].size() > LIMIT_SHARED_CSD)
-            shared_csd[thread_num].erase(shared_csd[thread_num].begin());
-    }
+#pragma omp critical(SHARED_CSD)
+    shared_csd[thread_num] = csd;
 }
-
+/*
 //各workerごとにSSI table(自分, 自分以外)があり、それをもとにhigh / lowを判定
 int update_worker_action_table()
 {
@@ -103,7 +120,7 @@ int update_worker_action_table()
         printf("Time spent: %lf, counter %d\n", spent, counter);
 
     return counter;
-}
+}*/
 
 void announce_para_finished()
 {
@@ -194,7 +211,7 @@ vector<array<double, 3>> get_CSD(vector<double> scores, vector<signed char> phas
         pair<double, int> p = sortedScores[i];
         double score = p.first * (-1);
         int var_index = p.second;
-        if (score <= CSD_SCORE_CRITERIA)
+        if (score < CSD_SCORE_CRITERIA)
             break; //ソート済みの為、ここでbreakすることで一定以下のものはCSDの中に入らない
         rank++;
         double varValue = pow(0.5, rank * CONSTANT_FOR_RANK_CALC / size); //この式はSSIの定義次第で変更すること
@@ -227,7 +244,7 @@ double calculate_SSI(vector<array<double, 3>> csd1, vector<array<double, 3>> csd
     {
         if (csd1.size() != csd2.size())
         {
-            printf("size at i(var)=%d: csd1 %d, csd2 %d\n", i, (int)csd1.size(), (int)csd2.size());
+            printf("size at i(var))=%d: csd1 %d, csd2 %d\n", i, (int)csd1.size(), (int)csd2.size());
             break; //skipする
         }
         array<double, 3> val1 = csd1[i];
@@ -254,20 +271,23 @@ double calculate_SSI(vector<array<double, 3>> csd1, vector<array<double, 3>> csd
     }
     return ssi;
 }
-
+/*
 void save_CSD(vector<array<double, 3>> csd)
 {
     if (csd.size() != 0)
         csd_database.push_back(csd); //CSDのサイズがゼロの場合は不要になるため例外処理
     if ((int)csd_database.size() > LIMIT_SAVING_CSD)
         csd_database.erase(csd_database.begin()); //古いCSDを頭から削除
-}
+}*/
 
 void _save_SSI(double ssi)
 {
-    SSI_database.push_back(ssi);
-    if ((int)SSI_database.size() > LIMIT_SAVING_SSI)
-        SSI_database.erase(SSI_database.begin());
+#pragma omp critical(SSI_DB)
+    {
+        SSI_database.push_back(ssi);
+        if ((int)SSI_database.size() > LIMIT_SAVING_SSI)
+            SSI_database.erase(SSI_database.begin());
+    }
 }
 double _average(vector<double> v)
 {
@@ -287,8 +307,13 @@ double _standardDeviation(vector<double> v)
 
 similarityLevel judge_SSI_score(double ssi)
 {
-    double ave = _average(SSI_database);
-    double std = _standardDeviation(SSI_database);
+
+    vector<double> db;
+#pragma omp critical(SHARED_CSD)
+    db = SSI_database;
+
+    double ave = _average(db);
+    double std = _standardDeviation(db);
     _save_SSI(ssi); //次回以降の為に、今回のssiの値を保存
 
     if (ave == 0 || std == 0)

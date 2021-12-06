@@ -46,7 +46,7 @@ extern vector<CaDiCaL::Clause *> import_shared_learntClause();
 extern void announce_para_finished();
 extern bool check_para_finished();
 
-extern array<vector<vector<array<double, 3>>>, PARALLEL_NUM> shared_csd;
+extern array<vector<array<double, 3>>, PARALLEL_NUM> shared_csd;
 //extern vector<bool> parallel_worker_action_table;
 extern bool check_action_table(int thread_num);
 extern void set_bool_to_action_table(int i, int j, bool b);

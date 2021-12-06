@@ -231,13 +231,6 @@ namespace CaDiCaL
     {
       opts.seed = set_parallel_seed(omp_get_thread_num());
       printf("thread: %d runs on seed = %d  \n", omp_get_thread_num(), opts.seed);
-
-      //UPDATE:: Master nodeのactivityを制御
-      if (omp_get_thread_num() == 0) // master nodeのThreadは0とする
-      {
-        while (!check_para_finished()) //masterの動作をここで定義
-          int counter = update_worker_action_table();
-      }
     }
 
     while (!res)

@@ -210,22 +210,21 @@ namespace CaDiCaL
     */
     if (PARALLEL_NUM > 1)
     {
+      clock_t start = clock();
+
       int my_thread = omp_get_thread_num();
       vector<array<double, 3>> my_csd = get_CSD(stab, phases.saved);
       if ((int)my_csd.size() > 0)
         submit_csd(my_thread, my_csd);
-      bool change = check_action_table(my_thread);
 
+      bool change = check_action_table(my_thread);
       if (change == true)
-      {
         stab = change_search_space(stab, score_inc);
 
-        for (int i = 0; i < PARALLEL_NUM; i++)
-        {
-          set_bool_to_action_table(my_thread, i, false);
-          set_bool_to_action_table(i, my_thread, false);
-        }
-      }
+      clock_t finish = clock();
+      double spent = (double)(finish - start) / CLOCKS_PER_SEC;
+      if (stats.restarts % 1000 == 0)
+        printf("Time spent: %lf / %d, [%d] @%lld\n", spent, (int)scores.size(), my_thread, stats.restarts);
     }
 
     report('R', 2);
