@@ -214,8 +214,8 @@ namespace CaDiCaL
       vector<array<double, 3>> my_csd = get_CSD(stab, phases.saved);
       if ((int)my_csd.size() > 0)
         submit_csd(my_thread, my_csd);
-
       bool change = check_action_table(my_thread);
+
       if (change == true)
       {
         stab = change_search_space(stab, score_inc);

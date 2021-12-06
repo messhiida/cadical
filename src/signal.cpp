@@ -135,13 +135,17 @@ namespace CaDiCaL
 
   void Signal::alarm(int seconds)
   {
+    //UPDATE:: 本当はこれでは不完全だが、parallel shared変数の解決策が思いつかない為このまま放置
+    alarm_set = false;
+    alarm_time = -1;
+
     assert(seconds >= 0);
-    //UPDATE::errorを避けるため
-    //assert(!alarm_set);
-    //assert(alarm_time < 0);
+    assert(!alarm_set);
+    assert(alarm_time < 0);
     SIGALRM_handler = signal(SIGALRM, catch_signal);
     alarm_set = true;
     alarm_time = absolute_real_time() + seconds;
+    printf("%d,%d\n", alarm_set, alarm_time);
     ::alarm(seconds);
   }
 

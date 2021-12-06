@@ -297,7 +297,7 @@ namespace CaDiCaL
     //UPDATE:: PARALLELを終了させる通知 (終了したthread)
     if (PARALLEL_NUM > 1 && !check_para_finished())
     {
-      check_para_finished(true);
+      announce_para_finished();
       printf("thread: %d finds a solution and announces to finish by result %d\n", omp_get_thread_num(), res);
     }
 

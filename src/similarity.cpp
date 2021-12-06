@@ -7,24 +7,8 @@ vector<vector<array<double, 3>>> csd_database;
 bool para_finished = false;
 array<vector<vector<array<double, 3>>>, PARALLEL_NUM> shared_csd;
 array<array<bool, PARALLEL_NUM>, PARALLEL_NUM> parallel_worker_action_table;
-
 array<vector<CaDiCaL::Clause *>, PARALLEL_NUM> shared_learntClause;
 
-bool check_para_finished(bool fin) //引数を指定しない場合は状況確認のみ。引数をtrueで指定すると終了通知
-{
-    if (fin == true)
-#pragma omp critical(access_para_finished)
-        para_finished = true;
-
-    bool tmp_fin;
-#pragma omp critical(access_para_finished)
-    tmp_fin = para_finished;
-
-    if (tmp_fin == true)
-        return true;
-    else
-        return false;
-}
 bool read_parallel_worker_action_table(int i, int j)
 {
     bool tmp;
@@ -70,7 +54,7 @@ void submit_csd(int thread_num, vector<array<double, 3>> csd)
 //各workerごとにSSI table(自分, 自分以外)があり、それをもとにhigh / lowを判定
 int update_worker_action_table()
 {
-    //clock_t start = clock();
+    clock_t start = clock();
     int counter = 0;
     for (int i = 0; i < PARALLEL_NUM; i++)
     {
@@ -112,12 +96,30 @@ int update_worker_action_table()
             }
         }
     }
-    /*
+
     clock_t finish = clock();
     double spent = (double)(finish - start) / CLOCKS_PER_SEC;
-    printf("Time spent: %lf, counter %d\n", spent, counter);
-    */
+    if (counter != 0)
+        printf("Time spent: %lf, counter %d\n", spent, counter);
+
     return counter;
+}
+
+void announce_para_finished()
+{
+#pragma omp critical(PARA_FINISHED)
+    para_finished = true;
+}
+
+bool check_para_finished()
+{
+    bool tmp_fin;
+#pragma omp critical(PARA_FINISHED)
+    tmp_fin = para_finished;
+    if (tmp_fin == true)
+        return true;
+    else
+        return false;
 }
 
 vector<double> change_search_space(vector<double> score_table, double inc)

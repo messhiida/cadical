@@ -43,7 +43,8 @@ extern int set_parallel_seed(int thread_num);
 extern void submit_shared_learntClause(int thread_num, CaDiCaL::Clause *lc);
 extern vector<CaDiCaL::Clause *> import_shared_learntClause();
 
-extern bool check_para_finished(bool fin = false);
+extern void announce_para_finished();
+extern bool check_para_finished();
 
 extern array<vector<vector<array<double, 3>>>, PARALLEL_NUM> shared_csd;
 //extern vector<bool> parallel_worker_action_table;
