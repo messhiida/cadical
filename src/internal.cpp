@@ -230,7 +230,7 @@ namespace CaDiCaL
     if (PARALLEL_NUM > 1)
     {
       opts.seed = set_parallel_seed(omp_get_thread_num());
-      printf("thread: %d runs on seed = %d  \n", omp_get_thread_num(), opts.seed);
+      //printf("thread: %d runs on seed = %d  \n", omp_get_thread_num(), opts.seed);
     }
 
     while (!res)

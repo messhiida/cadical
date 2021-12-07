@@ -8,23 +8,10 @@ bool para_finished = false;
 array<vector<array<double, 3>>, PARALLEL_NUM> shared_csd;
 //array<array<bool, PARALLEL_NUM>, PARALLEL_NUM> parallel_worker_action_table;
 array<vector<CaDiCaL::Clause *>, PARALLEL_NUM> shared_learntClause;
-/*
-bool read_parallel_worker_action_table(int i, int j)
-{
-    bool tmp;
-#pragma omp critical(action_table)
-    tmp = parallel_worker_action_table[i][j];
-    if (tmp == true)
-        return true;
-    else
-        return false;
-}*/
 
-bool check_action_table(int thread_num)
+bool check_ssi_table(int thread_num)
 {
-    int counter = 0;
-    vector<pair<int, int>> _record_simHigh;
-    for (int i = 0; i < PARALLEL_NUM; i++)
+    for (int i = thread_num; i < PARALLEL_NUM; i++)
     {
         if (i == thread_num)
             continue;
@@ -39,28 +26,12 @@ bool check_action_table(int thread_num)
         similarityLevel sl = judge_SSI_score(ssi);
         if (sl == high)
         {
-            _record_simHigh.push_back(make_pair(thread_num, i));
-            counter++;
-        }
-        if (counter >= ACTION_THREASHOLD)
-        {
-
-            printf("Similarity high: ");
-            for (int j = 0; j < counter; j++)
-                printf("[%d][%d],", _record_simHigh[j].first, _record_simHigh[j].second);
-            printf("\n");
-
+            printf("Similarity high: [%d][%d]\n", thread_num, i);
             return true;
         }
     }
     return false;
 }
-/*
-void set_bool_to_action_table(int i, int j, bool num)
-{
-#pragma omp critical(action_table)
-    parallel_worker_action_table[i][j] = num;
-}*/
 
 void submit_csd(int thread_num, vector<array<double, 3>> csd)
 {
@@ -139,19 +110,26 @@ bool check_para_finished()
         return false;
 }
 
-vector<double> change_search_space(vector<double> score_table, double inc)
+vector<double> change_search_space(vector<double> &score_table, CaDiCaL::ScoreSchedule &scores, double inc)
 {
     double incrementalScore = CHANGE_SCORE_INCRE * inc; //score_incのINCRE回分をup (CIRと同じであれば10000回）
     while (incrementalScore > 1e150)                    //double上限には引っかからないとは思うが、念の為
         incrementalScore /= 10;
 
-    for (double i = 0; i < (double)score_table.size() * CHANGE_SCORE_RATIO; i++)
+    auto it = scores.end();
+    double counter = 0;
+
+    while (it != scores.begin())
     {
-        //Minを探すことで、スコアを下から上に上げていっても上げていっても影響はないはず
-        vector<double>::iterator minIt = min_element(score_table.begin(), score_table.end());
-        size_t minIndex = distance(score_table.begin(), minIt);
-        score_table[minIndex] += incrementalScore;
+        --it; //一番はじめにデクリメントしてやる必要あり
+        if (counter >= score_table.size() * CHANGE_SCORE_RATIO)
+            break; //一定数以上の変数を触るとBreak
+
+        score_table[*it] += incrementalScore;
+        scores.update(*it);
+        counter++;
     }
+    //printf("%f\n", counter);
     return score_table;
 }
 
@@ -184,38 +162,34 @@ int set_parallel_seed(int thread_num)
     return para_seed;
 }
 
-double _count_validScoreVars(vector<double> scores)
+double count_validScoreVars(vector<double> stab)
 {
-    double count = 0;
-    for (double s : scores)
+    double count = 1;
+    for (double s : stab)
         if (s > CSD_SCORE_CRITERIA)
             count++;
     return count;
 }
 
-vector<array<double, 3>> get_CSD(vector<double> scores, vector<signed char> phases)
+vector<array<double, 3>> get_CSD(vector<double> scoreTable, vector<signed char> phases, CaDiCaL::ScoreSchedule scores)
 {
-    int var_size = (int)scores.size();
+    int var_size = (int)scoreTable.size();
     vector<array<double, 3>> csd(var_size); //csd[var] = {rank, phase, value},　不足分=下で定義されない分はzeroで埋められる
-    vector<pair<double, int>> sortedScores; //ソートするための仮置場
+    double rank = 0.0;
 
-    for (int i = 0; i < var_size; i++)
-        sortedScores.push_back(make_pair(scores[i] * (double)(-1.0), i)); //ソートするためにスコアに(-1)をかける。後で反転して戻す
-    sort(sortedScores.begin(), sortedScores.end());
-
-    double size = _count_validScoreVars(scores);
-    double rank = 0;
-
-    for (int i = 0; i < (int)sortedScores.size(); i++)
+    for (auto it = scores.begin(); it != scores.end(); ++it)
     {
-        pair<double, int> p = sortedScores[i];
-        double score = p.first * (-1);
-        int var_index = p.second;
-        if (score < CSD_SCORE_CRITERIA)
-            break; //ソート済みの為、ここでbreakすることで一定以下のものはCSDの中に入らない
         rank++;
-        double varValue = pow(0.5, rank * CONSTANT_FOR_RANK_CALC / size); //この式はSSIの定義次第で変更すること
+
+        unsigned var_index = *it;
+        double score = scoreTable[*it];
+        if (score <= (double)CSD_SCORE_CRITERIA)
+            break;
+
+        assert(var_size);
+        double varValue = pow(0.5, rank * CONSTANT_FOR_RANK_CALC / var_size); //この式はSSIの定義次第で変更すること
         double polarity = phases[var_index];
+
         array<double, 3> element = {rank, polarity, varValue};
         csd[var_index] = element;
     }
@@ -236,17 +210,15 @@ double _get_non_zero_var_size_in_CSD(vector<array<double, 3>> csd)
 
 double calculate_SSI(vector<array<double, 3>> csd1, vector<array<double, 3>> csd2)
 {
+    if (csd1.size() != csd2.size() || csd1.size() == 0 || csd2.size() == 0)
+        return 0;
+
     double ssi = 0;
     double size1 = _get_non_zero_var_size_in_CSD(csd1);
     double size2 = _get_non_zero_var_size_in_CSD(csd2);
 
     for (int i = 0; i < (int)csd1.size(); i++)
     {
-        if (csd1.size() != csd2.size())
-        {
-            printf("size at i(var))=%d: csd1 %d, csd2 %d\n", i, (int)csd1.size(), (int)csd2.size());
-            break; //skipする
-        }
         array<double, 3> val1 = csd1[i];
         array<double, 3> val2 = csd2[i];
         if (val1[0] == 0 || val2[0] == 0)
@@ -307,6 +279,8 @@ double _standardDeviation(vector<double> v)
 
 similarityLevel judge_SSI_score(double ssi)
 {
+    if (ssi == 0)
+        return normal;
 
     vector<double> db;
 #pragma omp critical(SHARED_CSD)

@@ -145,7 +145,7 @@ namespace CaDiCaL
     SIGALRM_handler = signal(SIGALRM, catch_signal);
     alarm_set = true;
     alarm_time = absolute_real_time() + seconds;
-    printf("%d,%d\n", alarm_set, alarm_time);
+    //printf("%d,%d\n", alarm_set, alarm_time);
     ::alarm(seconds);
   }
 

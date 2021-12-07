@@ -210,21 +210,34 @@ namespace CaDiCaL
     */
     if (PARALLEL_NUM > 1)
     {
-      clock_t start = clock();
+      clock_t t1 = clock();
 
       int my_thread = omp_get_thread_num();
-      vector<array<double, 3>> my_csd = get_CSD(stab, phases.saved);
-      if ((int)my_csd.size() > 0)
-        submit_csd(my_thread, my_csd);
+      vector<array<double, 3>> my_csd = get_CSD(stab, phases.saved, scores);
 
-      bool change = check_action_table(my_thread);
+      clock_t t2 = clock();
+
+      submit_csd(my_thread, my_csd);
+
+      clock_t t3 = clock();
+
+      bool change = check_ssi_table(my_thread);
+
+      clock_t t4 = clock();
       if (change == true)
-        stab = change_search_space(stab, score_inc);
+      {
+        stab = change_search_space(stab, scores, score_inc);
+      }
 
-      clock_t finish = clock();
-      double spent = (double)(finish - start) / CLOCKS_PER_SEC;
-      if (stats.restarts % 1000 == 0)
-        printf("Time spent: %lf / %d, [%d] @%lld\n", spent, (int)scores.size(), my_thread, stats.restarts);
+      if (stats.restarts % 100 == 0)
+      {
+        clock_t t5 = clock();
+        double spent1 = (double)(t2 - t1) / CLOCKS_PER_SEC;
+        double spent2 = (double)(t3 - t2) / CLOCKS_PER_SEC;
+        double spent3 = (double)(t4 - t3) / CLOCKS_PER_SEC;
+        double spent4 = (double)(t5 - t4) / CLOCKS_PER_SEC;
+        printf("Time spent: [%d] %d, %lf, %lf, %lf, %lf, %d, %ld\n", my_thread, change, spent1, spent2, spent3, spent4, (int)stab.size(), stats.restarts);
+      }
     }
 
     report('R', 2);
