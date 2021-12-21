@@ -208,10 +208,11 @@ namespace CaDiCaL
     vector<int> probes;       // remaining scheduled probes
     vector<Level> control;    // 'level + 1 == control.size ()'
     vector<Clause *> clauses; // ordered collection of all clauses
+    vector<Clause *> tmp_lc;  // UPDATE:: learnt clause一時保管用
     Averages averages;        // glue, size, jump moving averages
     Limit lim;                // limits for various phases
     Last last;                // statistics at last occurrence
-    Inc inc;                  // increments on limits
+    Inc inc;                  // increments on limいちじｈ
     Proof *proof;             // clausal proof observers if non zero
     Checker *checker;         // online proof checker observing proof
     Tracer *tracer;           // proof to file tracer observing proof

@@ -15,14 +15,14 @@
 using namespace std;
 
 //パラメーターセッティング
-#define PARALLEL_NUM 8
+#define PARALLEL_NUM 2
 #define ALPHA_TO_JUDGE_SSI 3
 #define CHANGE_SCORE_RATIO 0.1
 #define CHANGE_SCORE_INCRE 10000
 #define ACTION_THREASHOLD 2
 //#define RESTART_LIMIT 10000
 //#define FIXED_DECISION_AT_TOP true
-//#define PARA_SHARED_CLAUSE_LBD 2 //これ以下は共有する
+#define PARA_SHARED_CLAUSE_LBD 3 //これ以下は共有する
 #define CONSTANT_FOR_RANK_CALC 10
 #define CSD_SCORE_CRITERIA 0 //VSIDSの値がx未満であれば価値がないと判断する。0=VSIDSに何かしらの値が入っていればOK。1=直近の学習説に含まれているものにほぼ限定される
 #define CSD_VALID_VAR_RATIO 0.333
@@ -41,14 +41,13 @@ extern vector<double> SSI_database;
 extern vector<vector<array<double, 3>>> csd_database;
 extern bool para_finished;
 extern int set_parallel_seed(int thread_num);
-extern void submit_shared_learntClause(int thread_num, CaDiCaL::Clause *lc);
-extern vector<CaDiCaL::Clause *> import_shared_learntClause();
+extern void submit_shared_learntClause(int thread_num, vector<CaDiCaL::Clause *> &lc);
+extern vector<CaDiCaL::Clause *> import_shared_learntClause(int thread_num, vector<CaDiCaL::Clause *> &clauses, CaDiCaL::Stats &stats);
 
 extern void announce_para_finished();
 extern bool check_para_finished();
 
 extern array<vector<array<double, 3>>, PARALLEL_NUM> shared_csd;
-//extern vector<bool> parallel_worker_action_table;
 extern bool check_ssi_table(int thread_num);
 extern void set_bool_to_action_table(int i, int j, bool b);
 

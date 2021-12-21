@@ -126,88 +126,6 @@ namespace CaDiCaL
     lim.restart = stats.conflicts + opts.restartint;
     LOG("new restart limit at %" PRId64 " conflicts", lim.restart);
 
-    //UPDATE:: CSD for every N restarts
-    /*
-  if(stats.restarts > 0 && stats.restarts % 100 == 0){
-    map<int, vector<double> > new_csd = get_CSD (stab, phases.saved);
-    if(csd_database.size() >= 2){
-      map<int, vector<double> > old_csd = csd_database.back();
-      double ssi = calculate_SSI(new_csd, old_csd);
-      cout << stats.restarts << ",";
-      similarityLevel sim = judge_SSI_score(ssi);
-    }
-    save_CSD(new_csd);
-  }
-  */
-
-    //UPDATE:: restartごとにSSIを計算する
-    /*
-  if(csd_database.size() == LIMIT_SAVING_CSD){
-    int index = LIMIT_SAVING_CSD - 2;
-    double ssi = calculate_SSI(csd_database[0], csd_database[index]);
-    std::cout << ssi << ", ["<< stats.restarts<< "]" << endl;
-    map<int, vector<double> > latest_csd = csd_database[index+1];
-    csd_database.clear();
-    save_CSD(latest_csd);  
-  }
-  */
-
-    //UPDATE:: clausesの内容を書き出し
-    //その後、Restart時のCSDと同じ学習節があった場合の状態を書き出し
-    //std::cout << "[Restart: " << stats.restarts << "], ";
-    //std::cout << endl;
-
-    //UPDATE:: CSD get function
-    /*
-  map<int, vector<double> > csd = get_CSD (stab, phases.saved);
-  for (const auto& [key, value] : csd) {
-    std::cout << "{" << key << ",";
-    for(auto v: value) std::cout << v << ",";
-    std::cout << "}, ";
-  }
-  std::cout << endl;
-  */
-    /*
-  if(clauses.size() >= 10){
-    for(int i=0; i<10; i++) read_learntClause(clauses[i]);
-  }
-  */
-    //UPDATE:: import learnt clause for parallel
-    /*
-    if (PARALLEL_NUM > 1)
-    {
-      vector<Clause *> shared_clauses = import_shared_learntClause();
-      //printf("[thread %d] total %d clauses + import %d clauses, learnt %d\n", omp_get_thread_num(), clauses.size(), shared_clauses.size(), stats.learned.clauses);
-      for (const auto &c : shared_clauses)
-      {
-
-        
-        stats.added.total++;
-
-        stats.current.total++;
-        stats.added.total++;
-
-        if (c->redundant)
-        {
-          stats.current.redundant++;
-          stats.added.redundant++;
-        }
-        else
-        {
-          stats.irrbytes += c->bytes();
-          stats.current.irredundant++;
-          stats.added.irredundant++;
-        }
-        
-
-        clauses.push_back(c);
-        stats.learned.literals += c->size;
-        stats.learned.clauses++;
-        //watch_clause(c);
-        
-      }
-    }
-    */
     if (PARALLEL_NUM > 1)
     {
       clock_t t1 = clock();
@@ -216,27 +134,45 @@ namespace CaDiCaL
       vector<array<double, 3>> my_csd = get_CSD(stab, phases.saved, scores);
 
       clock_t t2 = clock();
-
       submit_csd(my_thread, my_csd);
 
       clock_t t3 = clock();
-
       bool change = check_ssi_table(my_thread);
 
       clock_t t4 = clock();
       if (change == true)
       {
-        stab = change_search_space(stab, scores, score_inc);
+        //TODO scoreがそもそもsortされていない件は解決していないが、大枠あっていそう（少なくともstabに入っているものは正しい）ので放置
+        change_search_space(stab, scores, score_inc);
       }
+
+      clock_t t5 = clock();
+
+      printf("[%d]before: %d -> ", my_thread, (int)clauses.size());
+
+      submit_shared_learntClause(my_thread, tmp_lc);
+      vector<Clause *> tmp_slc = import_shared_learntClause(my_thread, clauses, stats);
+      if (tmp_slc.size() != 0)
+        for (const auto &c : tmp_slc)
+        {
+          if (proof)
+            proof->add_derived_clause(c);
+          watch_clause(c); //TODO ここがエラー
+          if (c && opts.eagersubsume)
+            eagerly_subsume_recently_learned_clauses(c);
+        }
+
+      printf("[%d]after: %d\n", my_thread, (int)clauses.size());
 
       if (stats.restarts % 100 == 0)
       {
-        clock_t t5 = clock();
+        clock_t t6 = clock();
         double spent1 = (double)(t2 - t1) / CLOCKS_PER_SEC;
         double spent2 = (double)(t3 - t2) / CLOCKS_PER_SEC;
         double spent3 = (double)(t4 - t3) / CLOCKS_PER_SEC;
         double spent4 = (double)(t5 - t4) / CLOCKS_PER_SEC;
-        printf("Time spent: [%d] %d, %lf, %lf, %lf, %lf, %d, %ld\n", my_thread, change, spent1, spent2, spent3, spent4, (int)stab.size(), stats.restarts);
+        double spent5 = (double)(t6 - t5) / CLOCKS_PER_SEC;
+        printf("Time spent: [%d] %d, %lf, %lf, %lf, %lf, %lf, %d, %lld\n", my_thread, change, spent1, spent2, spent3, spent4, spent5, (int)stab.size(), stats.restarts);
       }
     }
 

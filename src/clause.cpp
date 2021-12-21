@@ -158,20 +158,9 @@ namespace CaDiCaL
     clauses.push_back(c);
     LOG(c, "new pointer %p", (void *)c);
 
-    /*
-    //UPDATE:: 学習節同じ場合のための書き出し　（全学習節)
-    if(c->glue > 0 && (c->glue <=2 || size <= 2)){
-      std::cout << "[lc: " << c->glue << "/" << c->size << "] ";
-      for (int i = 0; i < size; i++) std::cout << c->literals[i] << ", ";
-      std::cout << endl;
-    }
-    */
-
     //UPDATE:: 並列用の共有学習節をsubmitして登録
-    /*
-    if (c->glue > 0 && c->glue <= PARA_SHARED_CLAUSE_LBD && PARALLEL_NUM > 1)
-      submit_shared_learntClause(omp_get_thread_num(), c);
-    */
+    if (PARALLEL_NUM > 1 && c->glue > 0 && c->glue <= PARA_SHARED_CLAUSE_LBD)
+      tmp_lc.push_back(c);
 
     if (likely_to_be_kept_clause(c))
       mark_added(c);

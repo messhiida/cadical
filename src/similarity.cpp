@@ -2,11 +2,8 @@
 
 using namespace std;
 vector<double> SSI_database;
-//vector<vector<array<double, 3>>> csd_database;
-
 bool para_finished = false;
 array<vector<array<double, 3>>, PARALLEL_NUM> shared_csd;
-//array<array<bool, PARALLEL_NUM>, PARALLEL_NUM> parallel_worker_action_table;
 array<vector<CaDiCaL::Clause *>, PARALLEL_NUM> shared_learntClause;
 
 bool check_ssi_table(int thread_num)
@@ -38,60 +35,6 @@ void submit_csd(int thread_num, vector<array<double, 3>> csd)
 #pragma omp critical(SHARED_CSD)
     shared_csd[thread_num] = csd;
 }
-/*
-//各workerごとにSSI table(自分, 自分以外)があり、それをもとにhigh / lowを判定
-int update_worker_action_table()
-{
-    clock_t start = clock();
-    int counter = 0;
-    for (int i = 0; i < PARALLEL_NUM; i++)
-    {
-        for (int j = 0; j < i; j++)
-        {
-
-            bool check_shared_csd_empty;
-#pragma omp critical(shared_csd)
-            check_shared_csd_empty = (shared_csd[i].empty() || shared_csd[j].empty());
-
-            if (check_shared_csd_empty)
-                continue;
-
-            vector<array<double, 3>> csd1, csd2;
-#pragma omp critical(shared_csd)
-            {
-                csd1 = shared_csd[i].back();
-                csd2 = shared_csd[j].back();
-            }
-            if (csd1.size() != csd2.size())
-                continue; //一旦サイズが異なればskipすることにしておく
-            //if (csd1.size() == 0 || csd2.size() == 0)
-            //printf("[%d][%d] %d, %d: %d, %d\n", i, j, csd1.size(), csd2.size(), shared_csd[i].back().size(), shared_csd[i].back().size());
-            double ssi = calculate_SSI(csd1, csd2);
-            similarityLevel sl = judge_SSI_score(ssi);
-            if (sl == high && !read_parallel_worker_action_table(i, j))
-            {
-                counter++;
-                printf("Similarity high: [%d][%d]\n", j, i);
-                set_bool_to_action_table(i, j, true);
-                set_bool_to_action_table(j, i, true);
-            }
-            if (sl == low && read_parallel_worker_action_table(i, j))
-            {
-                counter--;
-                printf("Similarity low: [%d][%d]\n", j, i);
-                set_bool_to_action_table(i, j, false);
-                set_bool_to_action_table(j, i, false);
-            }
-        }
-    }
-
-    clock_t finish = clock();
-    double spent = (double)(finish - start) / CLOCKS_PER_SEC;
-    if (counter != 0)
-        printf("Time spent: %lf, counter %d\n", spent, counter);
-
-    return counter;
-}*/
 
 void announce_para_finished()
 {
@@ -116,43 +59,85 @@ vector<double> change_search_space(vector<double> &score_table, CaDiCaL::ScoreSc
     while (incrementalScore > 1e150)                    //double上限には引っかからないとは思うが、念の為
         incrementalScore /= 10;
 
+    vector<int> tmp_lit;
     auto it = scores.end();
+    double limit = score_table.size() * CHANGE_SCORE_RATIO;
     double counter = 0;
-
+    //一度scoreを元に回して置かなければ、updateにおいてscoreのiteratorが崩れてしまうため2回ループを回す
     while (it != scores.begin())
     {
         --it; //一番はじめにデクリメントしてやる必要あり
-        if (counter >= score_table.size() * CHANGE_SCORE_RATIO)
+        if (counter >= limit)
             break; //一定数以上の変数を触るとBreak
-
-        score_table[*it] += incrementalScore;
-        scores.update(*it);
+        tmp_lit.push_back(*it);
         counter++;
     }
-    //printf("%f\n", counter);
+    for (auto l : tmp_lit)
+    {
+        score_table[l] += incrementalScore;
+        scores.update(l);
+    }
+
     return score_table;
 }
 
-void submit_shared_learntClause(int thread_num, CaDiCaL::Clause *lc)
+void submit_shared_learntClause(int thread_num, vector<CaDiCaL::Clause *> &lc)
 {
-    for (int i = 0; i < PARALLEL_NUM; i++)
+    for (CaDiCaL::Clause *c : lc)
     {
-        if (i != 0 && i != thread_num) //0 == master node, thread_num == 自分自身 の為この２つはskip
-            shared_learntClause[i].push_back(lc);
+        for (int i = 0; i < PARALLEL_NUM; i++)
+        {
+            if (i != thread_num) //thread_num == 自分自身 の為skip
+            {
+#pragma omp critical(SHARED_CLAUSE)
+                shared_learntClause[i].push_back(c);
+            }
+        }
     }
+    lc.clear();
 }
 
-vector<CaDiCaL::Clause *> import_shared_learntClause()
+vector<CaDiCaL::Clause *> import_shared_learntClause(int thread_num, vector<CaDiCaL::Clause *> &clauses, CaDiCaL::Stats &stats)
 {
-    int my_thread = omp_get_thread_num();
-    vector<CaDiCaL::Clause *> res;
-    auto itr = shared_learntClause[my_thread].begin();
-    while (itr != shared_learntClause[my_thread].end())
+    vector<CaDiCaL::Clause *> slc; //shared learnt clause
+
+#pragma omp critical(SHARED_CLAUSE)
+    slc = shared_learntClause[thread_num];
+
+    for (const auto &c : slc)
     {
-        res.push_back(*itr);
-        itr = shared_learntClause[my_thread].erase(itr);
+        int size = c->size;
+        stats.learned.literals += size;
+        stats.learned.clauses++;
+
+        stats.units += (size == 1);
+        stats.binaries += (size == 2);
+
+        stats.added.total++;
+        stats.current.total++;
+        stats.added.total++;
+
+        if (c->redundant)
+        {
+            stats.current.redundant++;
+            stats.added.redundant++;
+        }
+        else
+        {
+            stats.irrbytes += c->bytes();
+            stats.current.irredundant++;
+            stats.added.irredundant++;
+        }
+        //TODO ここと
+        clauses.push_back(c);
+        stats.learned.literals += c->size;
+        stats.learned.clauses++;
     }
-    return res;
+
+#pragma omp critical(SHARED_CLAUSE)
+    shared_learntClause[thread_num].clear();
+
+    return slc;
 }
 
 int set_parallel_seed(int thread_num)
@@ -243,14 +228,6 @@ double calculate_SSI(vector<array<double, 3>> csd1, vector<array<double, 3>> csd
     }
     return ssi;
 }
-/*
-void save_CSD(vector<array<double, 3>> csd)
-{
-    if (csd.size() != 0)
-        csd_database.push_back(csd); //CSDのサイズがゼロの場合は不要になるため例外処理
-    if ((int)csd_database.size() > LIMIT_SAVING_CSD)
-        csd_database.erase(csd_database.begin()); //古いCSDを頭から削除
-}*/
 
 void _save_SSI(double ssi)
 {
@@ -298,14 +275,6 @@ similarityLevel judge_SSI_score(double ssi)
         return low;
     else
         return normal;
-}
-
-vector<int> convert_learntClause_to_vector(CaDiCaL::Clause *c)
-{
-    vector<int> lc;
-    for (int i = 0; i < c->size; i++)
-        lc.push_back(c->literals[i]);
-    return lc;
 }
 
 //UPDATE:: 同じ学習をした場合の2回目の実行時のファイル読み込み用

@@ -836,6 +836,7 @@ namespace CaDiCaL
     // Update glue and learned (1st UIP literals) statistics.
     //
     int size = (int)clause.size();
+
     const int glue = (int)levels.size() - 1;
     LOG(clause, "1st UIP size %d and glue %d clause", size, glue);
     UPDATE_AVERAGE(averages.current.glue.fast, glue);
@@ -881,7 +882,7 @@ namespace CaDiCaL
     UPDATE_AVERAGE(averages.current.jump, jump);
 
     int new_level = determine_actual_backtrack_level(jump);
-    ;
+
     UPDATE_AVERAGE(averages.current.level, new_level);
     backtrack(new_level);
 
