@@ -2,56 +2,6 @@
 
 using namespace std;
 vector<double> SSI_database;
-bool para_finished = false;
-array<vector<array<double, 3>>, PARALLEL_NUM> shared_csd;
-array<vector<CaDiCaL::Clause *>, PARALLEL_NUM> shared_learntClause;
-
-bool check_ssi_table(int thread_num)
-{
-    for (int i = thread_num; i < PARALLEL_NUM; i++)
-    {
-        if (i == thread_num)
-            continue;
-
-        vector<array<double, 3>> my_csd, comp_csd;
-#pragma omp critical(SHARED_CSD)
-        {
-            my_csd = shared_csd[thread_num];
-            comp_csd = shared_csd[i];
-        }
-        double ssi = calculate_SSI(my_csd, comp_csd);
-        similarityLevel sl = judge_SSI_score(ssi);
-        if (sl == high)
-        {
-            printf("Similarity high: [%d][%d]\n", thread_num, i);
-            return true;
-        }
-    }
-    return false;
-}
-
-void submit_csd(int thread_num, vector<array<double, 3>> csd)
-{
-#pragma omp critical(SHARED_CSD)
-    shared_csd[thread_num] = csd;
-}
-
-void announce_para_finished()
-{
-#pragma omp critical(PARA_FINISHED)
-    para_finished = true;
-}
-
-bool check_para_finished()
-{
-    bool tmp_fin;
-#pragma omp critical(PARA_FINISHED)
-    tmp_fin = para_finished;
-    if (tmp_fin == true)
-        return true;
-    else
-        return false;
-}
 
 vector<double> change_search_space(vector<double> &score_table, CaDiCaL::ScoreSchedule &scores, double inc)
 {
@@ -79,81 +29,6 @@ vector<double> change_search_space(vector<double> &score_table, CaDiCaL::ScoreSc
     }
 
     return score_table;
-}
-
-void submit_shared_learntClause(int thread_num, vector<CaDiCaL::Clause *> &lc)
-{
-    for (CaDiCaL::Clause *c : lc)
-    {
-        for (int i = 0; i < PARALLEL_NUM; i++)
-        {
-            if (i != thread_num) //thread_num == 自分自身 の為skip
-            {
-#pragma omp critical(SHARED_CLAUSE)
-                shared_learntClause[i].push_back(c);
-            }
-        }
-    }
-    lc.clear();
-}
-
-vector<CaDiCaL::Clause *> import_shared_learntClause(int thread_num, vector<CaDiCaL::Clause *> &clauses, CaDiCaL::Stats &stats)
-{
-    vector<CaDiCaL::Clause *> slc; //shared learnt clause
-
-#pragma omp critical(SHARED_CLAUSE)
-    slc = shared_learntClause[thread_num];
-
-    for (const auto &c : slc)
-    {
-        int size = c->size;
-        stats.learned.literals += size;
-        stats.learned.clauses++;
-
-        stats.units += (size == 1);
-        stats.binaries += (size == 2);
-
-        stats.added.total++;
-        stats.current.total++;
-        stats.added.total++;
-
-        if (c->redundant)
-        {
-            stats.current.redundant++;
-            stats.added.redundant++;
-        }
-        else
-        {
-            stats.irrbytes += c->bytes();
-            stats.current.irredundant++;
-            stats.added.irredundant++;
-        }
-        //TODO ここと
-        clauses.push_back(c);
-        stats.learned.literals += c->size;
-        stats.learned.clauses++;
-    }
-
-#pragma omp critical(SHARED_CLAUSE)
-    shared_learntClause[thread_num].clear();
-
-    return slc;
-}
-
-int set_parallel_seed(int thread_num)
-{
-    int para_seed = 0;
-    para_seed = 2048 * thread_num; //2048はmagic number
-    return para_seed;
-}
-
-double count_validScoreVars(vector<double> stab)
-{
-    double count = 1;
-    for (double s : stab)
-        if (s > CSD_SCORE_CRITERIA)
-            count++;
-    return count;
 }
 
 vector<array<double, 3>> get_CSD(vector<double> scoreTable, vector<signed char> phases, CaDiCaL::ScoreSchedule scores)
@@ -275,31 +150,4 @@ similarityLevel judge_SSI_score(double ssi)
         return low;
     else
         return normal;
-}
-
-//UPDATE:: 同じ学習をした場合の2回目の実行時のファイル読み込み用
-vector<int> restartNum;
-vector<int> _split_string(const string &str, char delim = ',')
-{
-    istringstream iss(str);
-    string tmp;
-    vector<int> res;
-    while (getline(iss, tmp, delim))
-        res.push_back(stoi(tmp));
-    return res;
-}
-vector<int> getSameLearntClause_restart(const string &path)
-{
-    stringstream ssurl{path};
-    string buf;
-    vector<string> strPath;
-    while (std::getline(ssurl, buf, '/'))
-        strPath.push_back(buf);
-
-    string url = "/home/iida/experiments/20211102_sameLearntClause_similarityCheck/seed_2e5-targetRestart/" + strPath.back() + ".output";
-    ifstream ifs(url);
-    string line;
-    while (getline(ifs, line))
-        restartNum = _split_string(line);
-    return restartNum;
 }

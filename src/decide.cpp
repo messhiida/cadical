@@ -43,19 +43,6 @@ namespace CaDiCaL
 
   int Internal::next_decision_variable()
   {
-    /*
-    //UPDATE:: Fixed veriable
-    vector<unsigned> prioritizedVars;
-    int num_of_fixed = 100;
-    for (int i = 1; i <= num_of_fixed; i++)
-      prioritizedVars.push_back(i);
-    for (int i = 0; i < prioritizedVars.size(); i++)
-    {
-      if (!val(prioritizedVars[i]))
-        return prioritizedVars[i];
-    }
-*/
-
     if (use_scores())
       return next_decision_variable_with_best_score();
     else
@@ -152,8 +139,6 @@ namespace CaDiCaL
     {
       stats.decisions++;
       int idx = next_decision_variable();
-      //デバッグ用print
-      //if(level < 10) std::cout << level << ":" << idx << endl;
       const bool target = (opts.target > 1 || (stable && opts.target));
       int decision = decide_phase(idx, target);
       search_assume_decision(decision);

@@ -208,7 +208,6 @@ namespace CaDiCaL
     vector<int> probes;       // remaining scheduled probes
     vector<Level> control;    // 'level + 1 == control.size ()'
     vector<Clause *> clauses; // ordered collection of all clauses
-    vector<Clause *> tmp_lc;  // UPDATE:: learnt clause一時保管用
     Averages averages;        // glue, size, jump moving averages
     Limit lim;                // limits for various phases
     Last last;                // statistics at last occurrence

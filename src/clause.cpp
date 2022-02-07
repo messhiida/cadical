@@ -158,10 +158,6 @@ namespace CaDiCaL
     clauses.push_back(c);
     LOG(c, "new pointer %p", (void *)c);
 
-    //UPDATE:: 並列用の共有学習節をsubmitして登録
-    if (PARALLEL_NUM > 1 && c->glue > 0 && c->glue <= PARA_SHARED_CLAUSE_LBD)
-      tmp_lc.push_back(c);
-
     if (likely_to_be_kept_clause(c))
       mark_added(c);
 

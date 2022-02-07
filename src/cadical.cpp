@@ -1093,19 +1093,8 @@ namespace CaDiCaL
 
 int main(int argc, char **argv)
 {
-  int res;
+  CaDiCaL::App app;
+  int res = app.main(argc, argv);
 
-  //UPDATE:: openMPを使った並列実験
-  printf("使用可能な最大スレッド数：%d\n", omp_get_max_threads());
-#pragma omp parallel num_threads(PARALLEL_NUM)
-  {
-#pragma omp for
-    for (int i = 0; i < PARALLEL_NUM; i++)
-    {
-      CaDiCaL::App app;
-      res = app.main(argc, argv);
-    }
-  }
-  //if分で排他制御
   return res;
 }

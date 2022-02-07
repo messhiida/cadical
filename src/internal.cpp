@@ -226,21 +226,8 @@ namespace CaDiCaL
       report('{');
     }
 
-    //UPDATE:: set parallel setting & master's activity
-    if (PARALLEL_NUM > 1)
-    {
-      opts.seed = set_parallel_seed(omp_get_thread_num());
-      //printf("thread: %d runs on seed = %d  \n", omp_get_thread_num(), opts.seed);
-    }
-
     while (!res)
     {
-      //UPDATE:: parallel用 終了通知を受けて終了させる (非終了thread)
-      if (PARALLEL_NUM > 1 && check_para_finished())
-      {
-        printf("thread: %d was forced to finish\n", omp_get_thread_num());
-        break;
-      }
 
       if (unsat)
         res = 20;
@@ -286,13 +273,6 @@ namespace CaDiCaL
     }
 
     STOP(search);
-
-    //UPDATE:: PARALLELを終了させる通知 (終了したthread)
-    if (PARALLEL_NUM > 1 && !check_para_finished())
-    {
-      announce_para_finished();
-      printf("thread: %d finds a solution and announces to finish by result %d\n", omp_get_thread_num(), res);
-    }
 
     return res;
   }

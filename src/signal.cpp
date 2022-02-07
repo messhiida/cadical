@@ -135,9 +135,6 @@ namespace CaDiCaL
 
   void Signal::alarm(int seconds)
   {
-    //UPDATE:: 本当はこれでは不完全だが、parallel shared変数の解決策が思いつかない為このまま放置
-    alarm_set = false;
-    alarm_time = -1;
 
     assert(seconds >= 0);
     assert(!alarm_set);
