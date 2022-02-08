@@ -418,17 +418,25 @@ namespace CaDiCaL
         stats.conflicts++;
 
         /*
-      //UPDATE:: CSD for SSI verification with restart change
-      map<int, vector<double> > new_csd = get_CSD (stab, phases.saved);
-      save_CSD(new_csd);
-      //std::cout << stats.conflicts << ":" << new_csd.size() << "/" << csd_database.size()<< endl;
-      if(csd_database.size() == (LIMIT_SAVING_CSD -1)){ 
-        int index = LIMIT_SAVING_CSD - 1;
-        double ssi = calculate_SSI(csd_database[0], csd_database[index-1]);
-        std::cout << ssi << ",";
-      }
-      */
-
+        // UPDATE::
+        CSD csd = get_CSD(stab, stable, phases);
+        save_CSD(csd);
+        if (stats.conflicts % 10 == 0)
+        {
+          printf("SSI:[%d] ", (int)stats.conflicts);
+          for (int j = 0; j < 3; j++)
+          {
+            for (int i = 1; i <= 10; i++)
+            {
+              int p = i * (int)pow(10, j);
+              CSD prev = get_prevCSD(p);
+              double ssi = calculate_SSI(csd, prev);
+              printf("%lf ", ssi);
+            }
+          }
+          printf("\n");
+        }
+        */
         LOG(conflict, "conflict");
 
         // The trail before the current decision level was conflict free.
