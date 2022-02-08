@@ -1426,13 +1426,11 @@ namespace CaDiCaL
     }
 
     // UPDATE:: restart limit here
-    /*
     if (stats.restarts >= RESTART_LIMIT)
     {
       LOG("restarts limit %" PRId64 " reached", RESTART_LIMIT);
       return true;
     }
-    */
 
     return false;
   }

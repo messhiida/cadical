@@ -176,7 +176,6 @@ namespace CaDiCaL
 
   void Internal::bump_variables()
   {
-
     assert(opts.bump);
 
     START(bump);

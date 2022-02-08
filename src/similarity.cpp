@@ -2,11 +2,154 @@
 
 using namespace std;
 vector<double> SSI_database;
+vector<CSD> CSD_database;
+
+bool get_phase(int idx, bool target, CaDiCaL::Phases phases)
+{
+    const int initial_phase = 1;
+    int phase = 0;
+    if (!phase)
+        phase = phases.forced[idx]; // TODO swap?
+    if (!phase && target)
+        phase = phases.target[idx];
+    if (!phase)
+        phase = phases.saved[idx];
+    if (!phase)
+        phase = initial_phase;
+
+    return (bool)phase;
+}
+
+CSD get_CSD(vector<double> scoreTable, bool stable, CaDiCaL::Phases phases)
+{
+    if (STABLE_ONLY_MODE)
+        stable = true;
+
+    int var_size = (int)scoreTable.size();
+    CSD csd = init_csd(var_size);
+
+    vector<pair<double, int>> sortedScoreTable;
+    for (int i = 0; i < var_size; i++)
+    {
+        double s = scoreTable[i];
+        if (s > CSD_SET_CRITERIA)
+            sortedScoreTable.push_back(make_pair(s * (-1), i)); //降順ソートするために、-1をかけておく
+    }
+    sort(sortedScoreTable.begin(), sortedScoreTable.end());
+    int nonZeroVars = (int)sortedScoreTable.size();
+    for (int j = 0; j < nonZeroVars; j++)
+    {
+        csd_element e;
+        // double score = sortedScoreTable[j].first * (-1);
+        int var = sortedScoreTable[j].second;
+        e.rank = (int)j + 1; // rankの最上位は0始まりの為、+1で補正
+        e.phase = get_phase(var, stable, phases);
+        // e.phase = phases.saved[var];
+        csd.data[var] = e;
+    }
+    csd.nonZeroVars = nonZeroVars;
+
+    return csd;
+}
+
+CSD init_csd(size_t var_size = 0)
+{
+    CSD csd;
+    csd.nonZeroVars = 0;
+    csd_element init_e;
+    init_e.phase = false;
+    init_e.rank = 0;
+    init_e.value = 0;
+    csd.data.resize((int)var_size);
+    fill(csd.data.begin(), csd.data.end(), init_e);
+    return csd;
+}
+
+void save_CSD(CSD csd)
+{
+    CSD_database.push_back(csd);
+    if ((int)CSD_database.size() > LIMIT_SAVING_CSD + 1)
+        CSD_database.erase(CSD_database.begin());
+}
+
+CSD get_prevCSD(int i)
+{
+    int size = (int)CSD_database.size();
+    if (size - i - 1 < 0)
+        return init_csd();
+    else
+        return CSD_database[(size - i - 1)];
+}
+
+/*
+vector<array<double, 3>> get_CSD(vector<double> scoreTable, vector<signed char> phases, CaDiCaL::ScoreSchedule scores)
+{
+    int var_size = (int)scoreTable.size();
+    vector<array<double, 3>> csd(var_size); //csd[var] = {rank, phase, value},　不足分=下で定義されない分はzeroで埋められる
+    double rank = 0.0;
+
+    for (auto it = scores.begin(); it != scores.end(); ++it)
+    {
+        rank++;
+
+        unsigned var_index = *it;
+        double score = scoreTable[*it];
+        if (score <= (double)CSD_SET_CRITERIA)
+            break;
+
+        assert(var_size);
+        double varValue = pow(0.5, rank * CONSTANT_FOR_RANK_CALC / var_size); //この式はSSIの定義次第で変更すること
+        double polarity = phases[var_index];
+
+        array<double, 3> element = {rank, polarity, varValue};
+        csd[var_index] = element;
+    }
+
+    return csd;
+}
+*/
+
+double calculate_SSI(CSD csd1, CSD csd2)
+{
+    double size1 = (double)csd1.nonZeroVars;
+    double size2 = (double)csd2.nonZeroVars;
+    if (size1 == 0 || size2 == 0) //何もCSDの中に入っていない場合に相当、エラー処理
+        return 0;
+
+    double ssi = 0;
+    double normalization = 0;
+    for (size_t i = 0; i < csd1.data.size(); i++)
+    {
+        csd_element val1 = csd1.data[i];
+        csd_element val2 = csd2.data[i];
+
+        if (val1.rank == 0 || val2.rank == 0) //修論に合わせるため、どちらかのCSDがVSIDSを持っていなければ対象外とする
+            continue;
+
+        double similarity = 0.0;
+        similarity = (1 - abs((double)val1.rank / size1 - (double)val2.rank / size2)) * (val1.phase == val2.phase);
+
+        val1.value = pow(0.5, (double)val1.rank * CONSTANT_FOR_RANK_CALC / size1);
+        val2.value = pow(0.5, (double)val2.rank * CONSTANT_FOR_RANK_CALC / size2);
+
+        double importance = (val1.value + val2.value) / 2.0;
+        // if (similarity != 1.0)
+        //     printf("calc SSI - [%d] %lf,%lf by %d,%d : %d,%d\n", i, similarity, importance, val1.rank, size1, val2.rank, size2);
+        ssi += similarity * importance;
+        normalization += importance;
+    }
+
+    if (normalization == 0.0)
+        return 0;
+
+    ssi /= normalization;
+    return ssi;
+}
 
 vector<double> change_search_space(vector<double> &score_table, CaDiCaL::ScoreSchedule &scores, double inc)
 {
-    double incrementalScore = CHANGE_SCORE_INCRE * inc; //score_incのINCRE回分をup (CIRと同じであれば10000回）
-    while (incrementalScore > 1e150)                    //double上限には引っかからないとは思うが、念の為
+    double incrementalScore = CHANGE_SCORE_INCRE * inc; // score_incのINCRE回分をup (CIRと同じであれば10000回）
+    while (incrementalScore > 1e150)                    // double上限には引っかからないとは思うが、念の為
         incrementalScore /= 10;
 
     vector<int> tmp_lit;
@@ -31,87 +174,11 @@ vector<double> change_search_space(vector<double> &score_table, CaDiCaL::ScoreSc
     return score_table;
 }
 
-vector<array<double, 3>> get_CSD(vector<double> scoreTable, vector<signed char> phases, CaDiCaL::ScoreSchedule scores)
-{
-    int var_size = (int)scoreTable.size();
-    vector<array<double, 3>> csd(var_size); //csd[var] = {rank, phase, value},　不足分=下で定義されない分はzeroで埋められる
-    double rank = 0.0;
-
-    for (auto it = scores.begin(); it != scores.end(); ++it)
-    {
-        rank++;
-
-        unsigned var_index = *it;
-        double score = scoreTable[*it];
-        if (score <= (double)CSD_SCORE_CRITERIA)
-            break;
-
-        assert(var_size);
-        double varValue = pow(0.5, rank * CONSTANT_FOR_RANK_CALC / var_size); //この式はSSIの定義次第で変更すること
-        double polarity = phases[var_index];
-
-        array<double, 3> element = {rank, polarity, varValue};
-        csd[var_index] = element;
-    }
-
-    return csd;
-}
-
-double _get_non_zero_var_size_in_CSD(vector<array<double, 3>> csd)
-{
-    int counter = 0;
-    for (int i = 0; i < (int)csd.size(); i++)
-    {
-        if (csd[i][0] != 0)
-            counter++;
-    }
-    return (double)counter;
-}
-
-double calculate_SSI(vector<array<double, 3>> csd1, vector<array<double, 3>> csd2)
-{
-    if (csd1.size() != csd2.size() || csd1.size() == 0 || csd2.size() == 0)
-        return 0;
-
-    double ssi = 0;
-    double size1 = _get_non_zero_var_size_in_CSD(csd1);
-    double size2 = _get_non_zero_var_size_in_CSD(csd2);
-
-    for (int i = 0; i < (int)csd1.size(); i++)
-    {
-        array<double, 3> val1 = csd1[i];
-        array<double, 3> val2 = csd2[i];
-        if (val1[0] == 0 || val2[0] == 0)
-            continue;
-
-        double rank1 = val1[0];
-        double rank2 = val2[0];
-        double phase1 = val1[1];
-        double phase2 = val2[1];
-        double value1 = val1[2];
-        double value2 = val2[2];
-
-        double similarity = (1 - abs(rank1 / size1 - rank2 / size2)) * (phase1 == phase2);
-        double importance = 1 - abs(value1 - value2);
-        ssi += similarity * importance;
-    }
-
-    if (size1 != 0 && size2 != 0)
-    {
-        double min_size = min(size1, size2);
-        ssi /= min_size; //ノーマライゼーション
-    }
-    return ssi;
-}
-
 void _save_SSI(double ssi)
 {
-#pragma omp critical(SSI_DB)
-    {
-        SSI_database.push_back(ssi);
-        if ((int)SSI_database.size() > LIMIT_SAVING_SSI)
-            SSI_database.erase(SSI_database.begin());
-    }
+    SSI_database.push_back(ssi);
+    if ((int)SSI_database.size() > LIMIT_SAVING_SSI + 1)
+        SSI_database.erase(SSI_database.begin());
 }
 double _average(vector<double> v)
 {
@@ -135,7 +202,6 @@ similarityLevel judge_SSI_score(double ssi)
         return normal;
 
     vector<double> db;
-#pragma omp critical(SHARED_CSD)
     db = SSI_database;
 
     double ave = _average(db);

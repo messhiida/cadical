@@ -126,8 +126,25 @@ namespace CaDiCaL
     lim.restart = stats.conflicts + opts.restartint;
     LOG("new restart limit at %" PRId64 " conflicts", lim.restart);
 
-    //UPDATE::
-    vector<array<double, 3>> my_csd = get_CSD(stab, phases.saved, scores);
+    // UPDATE::
+    if (stats.restarts % 10 == 0)
+    {
+      CSD csd = get_CSD(stab, stable, phases);
+      save_CSD(csd);
+
+      printf("SSI:[%d] ", (int)stats.restarts);
+      for (int j = 0; j < 3; j++)
+      {
+        for (int i = 1; i <= 10; i++)
+        {
+          int p = i * (int)pow(10, j);
+          CSD prev = get_prevCSD(p);
+          double ssi = calculate_SSI(csd, prev);
+          printf("%lf ", ssi);
+        }
+      }
+      printf("\n");
+    }
 
     report('R', 2);
     STOP(restart);

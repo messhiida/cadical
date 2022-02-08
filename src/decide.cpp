@@ -34,7 +34,7 @@ namespace CaDiCaL
     {
       res = scores.front();
       if (!val(res))
-        break; //if assigned (aka. zero = unassigned以外) break
+        break; // if assigned (aka. zero = unassigned以外) break
       (void)scores.pop_front();
     }
     LOG("next decision variable %d with score %g", res, score(res));
@@ -59,6 +59,7 @@ namespace CaDiCaL
   {
     const int initial_phase = opts.phase ? 1 : -1;
     int phase = 0;
+
     if (force_saved_phase)
       phase = phases.saved[idx];
     if (!phase && opts.forcephase)
@@ -137,6 +138,10 @@ namespace CaDiCaL
     }
     else
     {
+      // UPDATE::
+      if (STABLE_ONLY_MODE)
+        stable = true;
+
       stats.decisions++;
       int idx = next_decision_variable();
       const bool target = (opts.target > 1 || (stable && opts.target));
