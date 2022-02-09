@@ -397,7 +397,6 @@ namespace CaDiCaL
 
     if (searching_lucky_phases)
     {
-
       if (conflict)
         LOG(conflict, "ignoring lucky conflict");
     }
@@ -412,33 +411,33 @@ namespace CaDiCaL
         no_conflict_until = propagated;
       else
       {
-
         if (stable)
           stats.stabconflicts++;
         stats.conflicts++;
 
         // UPDATE::
-        /*
-        CSD tmp_csd = get_CSD(stab, stable, phases);
+        conflict_counter++;
+        vector<int> qtab = set_qtab(queue, links);
+        CSD csd = get_CSD(stab, qtab, stable, phases);
 
-        if (stats.conflicts % 100 == 0)
+        if (conflict_counter % 100 == 0)
         {
-          CSD csd = get_CSD(stab, stable, phases);
-          save_CSD(csd);
-          printf("SSI:[%d] ", (int)stats.conflicts);
-          for (int j = 0; j < 3; j++)
+          for (int j = 2; j < 5; j++)
           {
-            for (int i = 1; i <= 10; i++)
+            for (int i = 1; i < 10; i++)
             {
               int p = i * (int)pow(10, j);
-              CSD prev = get_prevCSD(p);
-              double ssi = calculate_SSI(csd, prev);
-              printf("%lf ", ssi);
+              if (conflict_counter == p)
+              {
+                printf("SSI-c:[%d] %d ", (int)stats.conflicts, conflict_counter);
+                double ssi = calculate_SSI(csd, conflict_CSD);
+                printf("%lf", ssi);
+                printf("\n");
+              }
             }
           }
-          printf("\n");
         }
-        */
+        conflict_CSD = csd;
 
         LOG(conflict, "conflict");
 

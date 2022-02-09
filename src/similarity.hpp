@@ -50,8 +50,9 @@ extern CSD get_CSD(vector<double>, vector<int>, bool, CaDiCaL::Phases);
 extern double calculate_SSI(CSD, CSD);
 extern void save_CSD(CSD);
 extern CSD get_prevCSD(int);
-extern CSD tmp_csd, saved_csd;
 extern vector<int> set_qtab(CaDiCaL::Queue, CaDiCaL::Links);
+extern int conflict_counter;
+extern CSD conflict_CSD;
 
 extern vector<double> SSI_database;
 extern bool check_ssi_table(int thread_num);

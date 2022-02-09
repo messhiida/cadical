@@ -127,6 +127,8 @@ namespace CaDiCaL
     LOG("new restart limit at %" PRId64 " conflicts", lim.restart);
 
     // UPDATE::
+
+    //ここからrestart時のSSI計算用
     vector<int> qtab = set_qtab(queue, links);
     CSD csd = get_CSD(stab, qtab, stable, phases);
     save_CSD(csd);
@@ -145,6 +147,9 @@ namespace CaDiCaL
       }
       printf("\n");
     }
+
+    //ここからconflict時のSSI計算用
+    conflict_counter = 0;
 
     report('R', 2);
     STOP(restart);

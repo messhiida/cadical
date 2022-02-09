@@ -3,7 +3,8 @@
 using namespace std;
 vector<double> SSI_database;
 vector<CSD> CSD_database;
-CSD tmp_csd, saved_csd;
+int conflict_counter;
+CSD conflict_CSD;
 
 vector<int> set_qtab(CaDiCaL::Queue queue, CaDiCaL::Links link)
 {
