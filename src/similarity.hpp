@@ -25,7 +25,7 @@ using namespace std;
 #define LIMIT_SAVING_CSD 1000
 #define CHANGE_INTERVAL 10
 #define STABLE_ONLY_MODE false
-
+#define RESTART_POLICY 0 // 0 uniform, 1 geometric, 2 Luby, 3 default
 struct csd_element
 {
     int rank;
@@ -39,25 +39,35 @@ struct CSD
     vector<csd_element> data;
 };
 
-enum similarityLevel
+enum SimilarityLevel
 {
     high,
     normal,
     low
 };
 
-extern CSD get_CSD(vector<double>, vector<int>, bool, CaDiCaL::Phases);
+enum RestartPolicy
+{
+    UNIFORM_INTERVAL,   // 1: 256c conflics 2015 Biere, 700c zChaff 2001
+    GEOMETRIC_INTERVAL, // 2: 100c, 1.5 times 2005 original v1.14 minisat
+    LUBY_INTERVAL,      // 3: 32 x Luby, 1993 luby, also refers Jinbo Huang paper
+    EMA_INTERVAL        // 4: default
+};
+
+extern CSD
+get_CSD(vector<double>, vector<int>, bool, CaDiCaL::Phases);
 extern double calculate_SSI(CSD, CSD);
 extern void save_CSD(CSD);
 extern CSD get_prevCSD(int);
 extern vector<int> set_qtab(CaDiCaL::Queue, CaDiCaL::Links);
 extern int conflict_counter;
 extern CSD conflict_CSD;
+extern RestartPolicy restart_policy;
 
 extern vector<double> SSI_database;
 extern bool check_ssi_table(int thread_num);
 extern vector<double> change_search_space(vector<double> &score_table, CaDiCaL::ScoreSchedule &scores, double scoreInc);
-similarityLevel judge_SSI_score(double ssi);
+SimilarityLevel judge_SSI_score(double ssi);
 
 CSD init_csd(size_t var_size);
 

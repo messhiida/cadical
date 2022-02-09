@@ -61,21 +61,72 @@ namespace CaDiCaL
   // restart conflict interval has passed and the fast moving average is above
   // a certain margin over the slow moving average then we restart.
 
+  // UPDATE:: 追加
+  int luby(int x)
+  {
+    int size, seq;
+    for (size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1)
+      ;
+    while (size - 1 != x)
+    {
+      size = (size - 1) >> 1;
+      seq--;
+      x = x % size;
+    }
+    return pow(2, seq);
+  }
+  int lubyFunc(int restart)
+  {
+    int counter = 0;
+    for (int i = 0; i < restart; i++)
+      counter += luby(i);
+    return counter;
+  }
   bool Internal::restarting()
   {
-    if (!opts.restart)
-      return false;
-    if ((size_t)level < assumptions.size() + 2)
-      return false;
-    if (stabilizing())
-      return reluctant;
-    if (stats.conflicts <= lim.restart)
-      return false;
-    double f = averages.current.glue.fast;
-    double margin = (100.0 + opts.restartmargin) / 100.0;
-    double s = averages.current.glue.slow, l = margin * s;
-    LOG("EMA glue slow %.2f fast %.2f limit %.2f", s, f, l);
-    return l <= f;
+    if (RESTART_POLICY == UNIFORM_INTERVAL)
+    {
+      int criteria = 256 * stats.restarts;
+      if (stats.conflicts >= criteria)
+        return true;
+      else
+        return false;
+    }
+    else if (RESTART_POLICY == GEOMETRIC_INTERVAL)
+    {
+      int criteria = 100 * pow(1.5, (stats.restarts - 1));
+      if (stats.conflicts >= criteria)
+        return true;
+      else
+        return false;
+    }
+    else if (RESTART_POLICY == LUBY_INTERVAL)
+    {
+      int criteria = 32 * lubyFunc(stats.restarts);
+      if (stats.conflicts >= criteria)
+      {
+        // printf("%d conflict : %d %d %d\n", RESTART_POLICY, stats.conflicts, stats.restarts, criteria);
+        return true;
+      }
+      else
+        return false;
+    }
+    else
+    {
+      if (!opts.restart)
+        return false;
+      if ((size_t)level < assumptions.size() + 2)
+        return false;
+      if (stabilizing())
+        return reluctant;
+      if (stats.conflicts <= lim.restart)
+        return false;
+      double f = averages.current.glue.fast;
+      double margin = (100.0 + opts.restartmargin) / 100.0;
+      double s = averages.current.glue.slow, l = margin * s;
+      LOG("EMA glue slow %.2f fast %.2f limit %.2f", s, f, l);
+      return l <= f;
+    }
   }
 
   // This is Marijn's reuse trail idea.  Instead of always backtracking to the
@@ -149,7 +200,7 @@ namespace CaDiCaL
     }
 
     //ここからconflict時のSSI計算用
-    conflict_counter = 0;
+    // conflict_counter = 0;
 
     report('R', 2);
     STOP(restart);

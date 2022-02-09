@@ -228,7 +228,7 @@ double _standardDeviation(vector<double> v)
     return sqrt(sum2 / (double)v.size() - ave * ave);
 }
 
-similarityLevel judge_SSI_score(double ssi)
+SimilarityLevel judge_SSI_score(double ssi)
 {
     if (ssi == 0)
         return normal;

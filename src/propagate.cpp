@@ -415,6 +415,7 @@ namespace CaDiCaL
           stats.stabconflicts++;
         stats.conflicts++;
 
+        /*
         // UPDATE::
         conflict_counter++;
         vector<int> qtab = set_qtab(queue, links);
@@ -438,6 +439,7 @@ namespace CaDiCaL
           }
         }
         conflict_CSD = csd;
+        */
 
         LOG(conflict, "conflict");
 
