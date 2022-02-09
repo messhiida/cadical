@@ -417,12 +417,14 @@ namespace CaDiCaL
           stats.stabconflicts++;
         stats.conflicts++;
 
-        /*
         // UPDATE::
-        CSD csd = get_CSD(stab, stable, phases);
-        save_CSD(csd);
-        if (stats.conflicts % 10 == 0)
+        /*
+        CSD tmp_csd = get_CSD(stab, stable, phases);
+
+        if (stats.conflicts % 100 == 0)
         {
+          CSD csd = get_CSD(stab, stable, phases);
+          save_CSD(csd);
           printf("SSI:[%d] ", (int)stats.conflicts);
           for (int j = 0; j < 3; j++)
           {
@@ -437,6 +439,7 @@ namespace CaDiCaL
           printf("\n");
         }
         */
+
         LOG(conflict, "conflict");
 
         // The trail before the current decision level was conflict free.

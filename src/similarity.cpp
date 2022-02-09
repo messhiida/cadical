@@ -3,9 +3,24 @@
 using namespace std;
 vector<double> SSI_database;
 vector<CSD> CSD_database;
+CSD tmp_csd, saved_csd;
+
+vector<int> set_qtab(CaDiCaL::Queue queue, CaDiCaL::Links link)
+{
+    vector<int> queue_table;
+    int next = queue.unassigned;
+    while (next)
+    {
+        queue_table.push_back(next);
+        next = link[next].prev;
+    }
+    return queue_table;
+}
 
 bool get_phase(int idx, bool target, CaDiCaL::Phases phases)
 {
+    // decide_phase関数(decide.cpp)を参照に変更、デフォルトのオプションでのみ動作
+
     const int initial_phase = 1;
     int phase = 0;
     if (!phase)
@@ -20,7 +35,7 @@ bool get_phase(int idx, bool target, CaDiCaL::Phases phases)
     return (bool)phase;
 }
 
-CSD get_CSD(vector<double> scoreTable, bool stable, CaDiCaL::Phases phases)
+CSD get_CSD(vector<double> scoreTable, vector<int> queueTable, bool stable, CaDiCaL::Phases phases)
 {
     if (STABLE_ONLY_MODE)
         stable = true;
@@ -28,26 +43,42 @@ CSD get_CSD(vector<double> scoreTable, bool stable, CaDiCaL::Phases phases)
     int var_size = (int)scoreTable.size();
     CSD csd = init_csd(var_size);
 
-    vector<pair<double, int>> sortedScoreTable;
-    for (int i = 0; i < var_size; i++)
+    if (stable) // score mode
     {
-        double s = scoreTable[i];
-        if (s > CSD_SET_CRITERIA)
-            sortedScoreTable.push_back(make_pair(s * (-1), i)); //降順ソートするために、-1をかけておく
+        vector<pair<double, int>> sortedScoreTable;
+        for (int i = 0; i < var_size; i++)
+        {
+            double s = scoreTable[i];
+            if (s > CSD_SET_CRITERIA)
+                sortedScoreTable.push_back(make_pair(s * (-1), i)); //降順ソートするために、-1をかけておく
+        }
+        sort(sortedScoreTable.begin(), sortedScoreTable.end());
+        int nonZeroVars = (int)sortedScoreTable.size();
+        for (int j = 0; j < nonZeroVars; j++)
+        {
+            csd_element e;
+            // double score = sortedScoreTable[j].first * (-1);
+            int var = sortedScoreTable[j].second;
+            e.rank = (int)j + 1; // rankの最上位は0始まりの為、+1で補正
+            e.phase = get_phase(var, stable, phases);
+            // e.phase = phases.saved[var];
+            csd.data[var] = e;
+        }
+        csd.nonZeroVars = nonZeroVars;
     }
-    sort(sortedScoreTable.begin(), sortedScoreTable.end());
-    int nonZeroVars = (int)sortedScoreTable.size();
-    for (int j = 0; j < nonZeroVars; j++)
+    else // queue mode
     {
-        csd_element e;
-        // double score = sortedScoreTable[j].first * (-1);
-        int var = sortedScoreTable[j].second;
-        e.rank = (int)j + 1; // rankの最上位は0始まりの為、+1で補正
-        e.phase = get_phase(var, stable, phases);
-        // e.phase = phases.saved[var];
-        csd.data[var] = e;
+        int size = (int)queueTable.size();
+        for (int i = 0; i < size; i++)
+        {
+            csd_element e;
+            int var = queueTable[i];
+            e.rank = i + 1;
+            e.phase = get_phase(var, stable, phases);
+            csd.data[var] = e;
+        }
+        csd.nonZeroVars = size;
     }
-    csd.nonZeroVars = nonZeroVars;
 
     return csd;
 }

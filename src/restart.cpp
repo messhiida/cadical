@@ -127,11 +127,12 @@ namespace CaDiCaL
     LOG("new restart limit at %" PRId64 " conflicts", lim.restart);
 
     // UPDATE::
-    CSD csd = get_CSD(stab, stable, phases);
+    vector<int> qtab = set_qtab(queue, links);
+    CSD csd = get_CSD(stab, qtab, stable, phases);
     save_CSD(csd);
     if (stats.restarts % 10 == 0)
     {
-      printf("SSI:[%d] ", (int)stats.restarts);
+      printf("SSI-r:[%d] %d ", (int)stats.restarts, stable);
       for (int j = 0; j < 3; j++)
       {
         for (int i = 1; i <= 10; i++)

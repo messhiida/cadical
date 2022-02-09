@@ -24,7 +24,7 @@ using namespace std;
 #define LIMIT_SAVING_SSI 1000
 #define LIMIT_SAVING_CSD 1000
 #define CHANGE_INTERVAL 10
-#define STABLE_ONLY_MODE true
+#define STABLE_ONLY_MODE false
 
 struct csd_element
 {
@@ -46,10 +46,12 @@ enum similarityLevel
     low
 };
 
-extern CSD get_CSD(vector<double>, bool, CaDiCaL::Phases);
+extern CSD get_CSD(vector<double>, vector<int>, bool, CaDiCaL::Phases);
 extern double calculate_SSI(CSD, CSD);
 extern void save_CSD(CSD);
 extern CSD get_prevCSD(int);
+extern CSD tmp_csd, saved_csd;
+extern vector<int> set_qtab(CaDiCaL::Queue, CaDiCaL::Links);
 
 extern vector<double> SSI_database;
 extern bool check_ssi_table(int thread_num);
