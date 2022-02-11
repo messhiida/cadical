@@ -200,7 +200,7 @@ namespace CaDiCaL
     }
 
     //ここからconflict時のSSI計算用
-    // conflict_counter = 0;
+    conflict_counter = 0;
 
     report('R', 2);
     STOP(restart);
