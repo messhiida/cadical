@@ -25,7 +25,7 @@ using namespace std;
 #define LIMIT_SAVING_CSD 1002
 #define CHANGE_INTERVAL 10
 #define STABLE_ONLY_MODE false
-#define RESTART_POLICY 3 // 0 uniform, 1 geometric, 2 Luby, 3 default
+#define RESTART_POLICY 1 // 0 uniform, 1 geometric, 2 Luby, 3 default
 struct csd_element
 {
     int rank;

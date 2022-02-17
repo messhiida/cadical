@@ -85,11 +85,16 @@ namespace CaDiCaL
   int geometricFunc(int restart)
   {
     int counter = 0;
-    for (int i = 0; i < restart; i++)
+    for (int i = 0, repeat = 0; i < restart; i++, repeat++)
     {
-      int c = (int)(100 * pow(1.5, i - 1)) % 10000;
+      int c = (int)(100 * pow(1.5, repeat));
+      if (c >= 10000)
+      {
+        repeat = 0;
+        c = (int)(100 * pow(1.5, repeat))
+      }
       counter += c;
-      printf("[counter] %d %d %d %d\n", i, c, counter, restart);
+      printf("[counter] %d %d %d %d %d\n", i, repeat, c, counter, restart);
     }
     return counter;
   }
