@@ -82,6 +82,17 @@ namespace CaDiCaL
       counter += luby(i);
     return counter;
   }
+  int geometricFunc(int restart)
+  {
+    int counter = 0;
+    for (int i = 0; i < restart; i++)
+    {
+      int c = (100 * pow(1.5, restart - 1)) % 10000;
+      counter += c;
+    }
+    return counter;
+  }
+
   bool Internal::restarting()
   {
     if (RESTART_POLICY == UNIFORM_INTERVAL)
@@ -94,7 +105,9 @@ namespace CaDiCaL
     }
     else if (RESTART_POLICY == GEOMETRIC_INTERVAL)
     {
-      int criteria = 100 * pow(1.5, (stats.restarts - 1));
+      // int criteria = 100 * pow(1.5, (stats.restarts - 1));
+      int criteria = geometricFunc(stats.restarts);
+      printf("%d %d\n", criteria, stats.restarts);
       if (stats.conflicts >= criteria)
         return true;
       else
