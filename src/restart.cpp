@@ -88,13 +88,13 @@ namespace CaDiCaL
     for (int i = 0, repeat = 0; i < restart; i++, repeat++)
     {
       int c = (int)(100 * pow(1.5, repeat));
-      if (c >= 10000)
+      if (c >= 3000)
       {
         repeat = 0;
-        c = (int)(100 * pow(1.5, repeat))
+        c = (int)(100 * pow(1.5, repeat));
       }
       counter += c;
-      printf("[counter] %d %d %d %d %d\n", i, repeat, c, counter, restart);
+      // printf("[counter] %d %d %d %d %d\n", i, repeat, c, counter, restart);
     }
     return counter;
   }
@@ -115,7 +115,7 @@ namespace CaDiCaL
       // int criteria = 100 * pow(1.5, (stats.restarts - 1));
       if (stats.conflicts >= criteria)
       {
-        printf("%d %d %d\n", stats.conflicts, criteria, stats.restarts);
+        // printf("%ld %d %ld\n", stats.conflicts, criteria, stats.restarts);
         return true;
       }
       else
