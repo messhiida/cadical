@@ -87,9 +87,9 @@ namespace CaDiCaL
     int counter = 0;
     for (int i = 0; i < restart; i++)
     {
-      int c = (int)(100 * pow(1.5, restart - 1)) % 10000;
+      int c = (int)(100 * pow(1.5, i - 1)) % 10000;
       counter += c;
-      printf("[counter] %d %d %d\n", c, counter, restart);
+      printf("[counter] %d %d %d %d\n", i, c, counter, restart);
     }
     return counter;
   }
