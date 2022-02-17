@@ -87,8 +87,9 @@ namespace CaDiCaL
     int counter = 0;
     for (int i = 0; i < restart; i++)
     {
-      int c = (100 * pow(1.5, restart - 1)) % 10000;
+      int c = (int)(100 * pow(1.5, restart - 1)) % 10000;
       counter += c;
+      printf("[counter] %d %d %d\n", c, counter, restart);
     }
     return counter;
   }
@@ -105,11 +106,13 @@ namespace CaDiCaL
     }
     else if (RESTART_POLICY == GEOMETRIC_INTERVAL)
     {
-      // int criteria = 100 * pow(1.5, (stats.restarts - 1));
       int criteria = geometricFunc(stats.restarts);
-      printf("%d %d\n", criteria, stats.restarts);
+      // int criteria = 100 * pow(1.5, (stats.restarts - 1));
       if (stats.conflicts >= criteria)
+      {
+        printf("%d %d %d\n", stats.conflicts, criteria, stats.restarts);
         return true;
+      }
       else
         return false;
     }
