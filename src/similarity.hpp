@@ -17,7 +17,7 @@ using namespace std;
 //パラメーターセッティング
 #define CONSTANT_FOR_RANK_CALC 10 // Rank計算用定数
 #define CSD_SET_CRITERIA 1        // VSIDSの値がx未満であれば価値がないと判断する。0=VSIDSに何かしらの値が入っていればOK。1=直近の学習説に含まれているものにほぼ限定される
-#define RESTART_LIMIT 100000
+#define RESTART_LIMIT 2000
 #define CHANGE_SCORE_RATIO 0.1
 #define CHANGE_SCORE_INCRE 10000
 #define ALPHA_TO_JUDGE_SSI 2
@@ -25,7 +25,7 @@ using namespace std;
 #define LIMIT_SAVING_CSD 1002
 #define CHANGE_INTERVAL 10
 #define STABLE_ONLY_MODE false
-#define RESTART_POLICY 1 // 0 uniform, 1 geometric, 2 Luby, 3 default
+#define RESTART_POLICY 3 // 0 uniform, 1 geometric, 2 Luby, 3 default
 struct csd_element
 {
     int rank;
