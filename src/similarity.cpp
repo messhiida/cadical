@@ -36,13 +36,14 @@ bool get_phase(int idx, bool target, CaDiCaL::Phases phases)
     return (bool)phase;
 }
 
-CSD get_CSD(vector<double> scoreTable, vector<int> queueTable, bool stable, CaDiCaL::Phases phases)
+CSD get_CSD(vector<double> scoreTable, vector<int> queueTable, bool stable, CaDiCaL::Phases phases, int64_t conflicts)
 {
     if (STABLE_ONLY_MODE)
         stable = true;
 
     int var_size = (int)scoreTable.size();
     CSD csd = init_csd(var_size);
+    csd.conflicts = conflicts;
 
     if (stable) // score mode
     {
@@ -88,6 +89,7 @@ CSD init_csd(size_t var_size = 0)
 {
     CSD csd;
     csd.nonZeroVars = 0;
+    csd.conflicts = 0;
     csd_element init_e;
     init_e.phase = false;
     init_e.rank = 0;
@@ -112,34 +114,6 @@ CSD get_prevCSD(int i)
     else
         return CSD_database[(size - i - 1)];
 }
-
-/*
-vector<array<double, 3>> get_CSD(vector<double> scoreTable, vector<signed char> phases, CaDiCaL::ScoreSchedule scores)
-{
-    int var_size = (int)scoreTable.size();
-    vector<array<double, 3>> csd(var_size); //csd[var] = {rank, phase, value},　不足分=下で定義されない分はzeroで埋められる
-    double rank = 0.0;
-
-    for (auto it = scores.begin(); it != scores.end(); ++it)
-    {
-        rank++;
-
-        unsigned var_index = *it;
-        double score = scoreTable[*it];
-        if (score <= (double)CSD_SET_CRITERIA)
-            break;
-
-        assert(var_size);
-        double varValue = pow(0.5, rank * CONSTANT_FOR_RANK_CALC / var_size); //この式はSSIの定義次第で変更すること
-        double polarity = phases[var_index];
-
-        array<double, 3> element = {rank, polarity, varValue};
-        csd[var_index] = element;
-    }
-
-    return csd;
-}
-*/
 
 double calculate_SSI(CSD csd1, CSD csd2)
 {

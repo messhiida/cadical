@@ -37,6 +37,7 @@ struct CSD
 {
     int nonZeroVars;
     vector<csd_element> data;
+    int64_t conflicts;
 };
 
 enum SimilarityLevel
@@ -55,7 +56,7 @@ enum RestartPolicy
 };
 
 extern CSD
-get_CSD(vector<double>, vector<int>, bool, CaDiCaL::Phases);
+get_CSD(vector<double>, vector<int>, bool, CaDiCaL::Phases, int64_t);
 extern double calculate_SSI(CSD, CSD);
 extern void save_CSD(CSD);
 extern CSD get_prevCSD(int);

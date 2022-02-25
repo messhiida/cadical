@@ -416,6 +416,7 @@ namespace CaDiCaL
         stats.conflicts++;
 
         // UPDATE::
+        /*
         conflict_counter++;
         vector<int> qtab = set_qtab(queue, links);
         CSD csd = get_CSD(stab, qtab, stable, phases);
@@ -428,6 +429,7 @@ namespace CaDiCaL
             printf("SSI-c@ %d %d %d %lf\n", conflict_counter, (int)stats.conflicts, (int)stats.restarts, ssi);
         }
         save_CSD(csd);
+        */
         /*
         if (conflict_counter % 100 == 0)
         {
