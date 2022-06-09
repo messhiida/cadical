@@ -123,7 +123,7 @@ namespace CaDiCaL
     }
     else if (RESTART_POLICY == LUBY_INTERVAL)
     {
-      int criteria = 32 * lubyFunc(stats.restarts);
+      int criteria = 100 * lubyFunc(stats.restarts);
       if (stats.conflicts >= criteria)
       {
         // printf("%d conflict : %d %d %d\n", RESTART_POLICY, stats.conflicts, stats.restarts, criteria);
@@ -200,6 +200,7 @@ namespace CaDiCaL
 
     // UPDATE::
     //ここからrestart時のSSI計算用
+    /*
     vector<int> qtab = set_qtab(queue, links);
     CSD csd = get_CSD(stab, qtab, stable, phases, stats.conflicts);
     save_CSD(csd);
@@ -225,6 +226,7 @@ namespace CaDiCaL
       }
       printf("\n");
     }
+    */
 
     //ここからconflict時のSSI計算用
     // conflict_counter = 0;
