@@ -416,10 +416,10 @@ namespace CaDiCaL
         stats.conflicts++;
 
         // UPDATE::
-        /*
         conflict_counter++;
         vector<int> qtab = set_qtab(queue, links);
-        CSD csd = get_CSD(stab, qtab, stable, phases);
+        CSD csd = get_CSD(stab, qtab, stable, phases, stats.conflicts);
+        /*
         if (conflict_counter == 1 || conflict_counter == 100)
         {
           CSD prevCSD1 = get_prevCSD(102);
@@ -430,24 +430,28 @@ namespace CaDiCaL
         }
         save_CSD(csd);
         */
-        /*
-        if (conflict_counter % 100 == 0)
+        // if (conflict_counter % 100 == 0)
+        //{
+        for (int j = 0; j < 4; j++)
         {
-          for (int j = 2; j < 5; j++)
+          for (int i = 1; i < 10; i++)
           {
-            for (int i = 1; i < 10; i++)
+            int p = i * (int)pow(10, j);
+            if (conflict_counter == p)
             {
-              int p = i * (int)pow(10, j);
-              if (conflict_counter == p)
-              {
-                double ssi = calculate_SSI(csd, conflict_CSD);
+              double ssi = calculate_SSI(csd, conflict_CSD);
+              if (0 < ssi && ssi < 1)
                 printf("SSI-c:[%d] %d %lf\n", (int)stats.conflicts, conflict_counter, ssi);
-              }
             }
           }
         }
-        conflict_CSD = csd;
-        */
+        //}
+        if (conflict_counter >= 5120 && stats.conflicts % 10 == 0)
+        {
+          conflict_CSD = csd;
+          conflict_counter = 0;
+        }
+        // conflict_CSD = csd;
 
         LOG(conflict, "conflict");
 
